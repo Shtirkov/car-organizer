@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: car-organizer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carorg
+      POSTGRES_PASSWORD: carorg_dev_pw
+      POSTGRES_DB: car_organizer
+    ports:
+      - "5432:5432"
+    volumes:
+      - car_organizer_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carorg -d car_organizer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  car_organizer_pgdata:

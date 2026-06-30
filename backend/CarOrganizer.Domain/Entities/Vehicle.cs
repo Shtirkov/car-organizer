@@ -1,0 +1,29 @@
+using CarOrganizer.Domain.Common;
+
+namespace CarOrganizer.Domain.Entities;
+
+/// <summary>
+/// A vehicle in an owner's garage. Root for its maintenance records, documents and reminders.
+/// </summary>
+public class Vehicle : BaseEntity
+{
+    /// <summary>Identity user who owns the vehicle. FK to the Identity user is wired in Phase 2.</summary>
+    public Guid OwnerId { get; set; }
+
+    public string Make { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
+    public int Year { get; set; }
+
+    /// <summary>Current odometer reading (km).</summary>
+    public int Mileage { get; set; }
+
+    public string? Vin { get; set; }
+    public string? RegistrationPlate { get; set; }
+
+    /// <summary>Free-text engine description (e.g. "2.0 TDI").</summary>
+    public string? Engine { get; set; }
+
+    public ICollection<MaintenanceRecord> MaintenanceRecords { get; set; } = new List<MaintenanceRecord>();
+    public ICollection<Document> Documents { get; set; } = new List<Document>();
+    public ICollection<Reminder> Reminders { get; set; } = new List<Reminder>();
+}

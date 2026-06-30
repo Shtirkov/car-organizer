@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CarOrganizer.API/CarOrganizer.API.csproj" />
+  <Project Path="CarOrganizer.Application/CarOrganizer.Application.csproj" />
+  <Project Path="CarOrganizer.Domain/CarOrganizer.Domain.csproj" />
+  <Project Path="CarOrganizer.Infrastructure/CarOrganizer.Infrastructure.csproj" />
+</Solution>
