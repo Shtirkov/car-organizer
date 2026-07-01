@@ -1,4 +1,6 @@
+using CarOrganizer.Domain.Entities;
 using CarOrganizer.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,9 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        services.AddIdentityCore<User>()
+            .AddEntityFrameworkStores<AppDbContext>();
 
         return services;
     }

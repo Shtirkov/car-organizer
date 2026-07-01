@@ -1,14 +1,17 @@
 using System.Reflection;
 using CarOrganizer.Domain.Common;
 using CarOrganizer.Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CarOrganizer.Infrastructure.Persistence;
 
 /// <summary>
 /// Central EF Core gateway to the database. All persistence flows through here.
+/// Extends IdentityUserContext (users only, no role tables) to also own the
+/// ASP.NET Identity user store.
 /// </summary>
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityUserContext<User, Guid>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
