@@ -1,4 +1,6 @@
+using CarOrganizer.Application.Interfaces;
 using CarOrganizer.Domain.Entities;
+using CarOrganizer.Infrastructure.Identity;
 using CarOrganizer.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,8 +24,16 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        services.AddIdentityCore<User>()
+        services.AddIdentityCore<User>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+
+                options.Password.RequiredLength = 8;
+                options.Password.RequireNonAlphanumeric = false;
+            })
             .AddEntityFrameworkStores<AppDbContext>();
+
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

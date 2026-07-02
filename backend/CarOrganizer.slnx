@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/CarOrganizer.IntegrationTests/CarOrganizer.IntegrationTests.csproj" />
+    <Project Path="tests/CarOrganizer.UnitTests/CarOrganizer.UnitTests.csproj" />
+  </Folder>
   <Project Path="CarOrganizer.API/CarOrganizer.API.csproj" />
   <Project Path="CarOrganizer.Application/CarOrganizer.Application.csproj" />
   <Project Path="CarOrganizer.Domain/CarOrganizer.Domain.csproj" />

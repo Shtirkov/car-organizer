@@ -7,6 +7,10 @@ Car_Maintenance_Tracker_PRD_v1.docx
 *.docx
 ~$*.docx
 
+# ---- Local working notes (not committed) ----
+# CLAUDE.md is committed (shared project knowledge); personal/machine-specific notes go here:
+CLAUDE.local.md
+
 # ---- .NET / build output ----
 bin/
 obj/
