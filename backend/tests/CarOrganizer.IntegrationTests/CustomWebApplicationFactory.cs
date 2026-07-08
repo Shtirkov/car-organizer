@@ -20,6 +20,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         // AddInfrastructure throws if this is missing; the Npgsql registration it creates is replaced below.
         builder.UseSetting("ConnectionStrings:Default", "Host=localhost;Database=dummy;Username=dummy;Password=dummy");
 
+        // Self-contained JWT config so the app boots without relying on appsettings.Development.json.
+        builder.UseSetting("Jwt:Issuer", "test-issuer");
+        builder.UseSetting("Jwt:Audience", "test-audience");
+        builder.UseSetting("Jwt:Key", "integration-test-signing-key-at-least-32-bytes-long-0123456789");
+        builder.UseSetting("Jwt:AccessTokenMinutes", "15");
+
         builder.ConfigureTestServices(services =>
         {
             // Drop every descriptor tied to the real DbContext/provider, then re-register on InMemory.

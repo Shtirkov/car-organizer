@@ -84,4 +84,52 @@ public class AuthControllerTests
 
         service.Verify(s => s.RegisterAsync(It.IsAny<RegisterRequest>(), cts.Token), Times.Once);
     }
+
+    // ---- Login -------------------------------------------------------------
+
+    [Fact]
+    public async Task Login_WhenServiceSucceeds_ReturnsOkWithAuthResponse()
+    {
+        var authResponse = new AuthResponse("signed.jwt.token", DateTime.UtcNow.AddMinutes(15));
+        var service = new Mock<IAuthService>();
+        service
+            .Setup(s => s.LoginAsync(It.IsAny<LoginRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Success(authResponse));
+        var sut = new AuthController(service.Object);
+
+        var response = await sut.Login(new LoginRequest("user@example.com", "Passw0rd123"), CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(response);
+        Assert.Same(authResponse, ok.Value);
+    }
+
+    [Fact]
+    public async Task Login_WhenServiceFails_ReturnsUnauthorized()
+    {
+        var service = new Mock<IAuthService>();
+        service
+            .Setup(s => s.LoginAsync(It.IsAny<LoginRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(["Invalid email or password."]));
+        var sut = new AuthController(service.Object);
+
+        var response = await sut.Login(new LoginRequest("user@example.com", "wrong"), CancellationToken.None);
+
+        Assert.IsType<UnauthorizedObjectResult>(response);
+    }
+
+    [Fact]
+    public async Task Login_PassesTheRequestAndTokenToTheService()
+    {
+        using var cts = new CancellationTokenSource();
+        var request = new LoginRequest("user@example.com", "Passw0rd123");
+        var service = new Mock<IAuthService>();
+        service
+            .Setup(s => s.LoginAsync(It.IsAny<LoginRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Success(new AuthResponse("t", DateTime.UtcNow)));
+        var sut = new AuthController(service.Object);
+
+        await sut.Login(request, cts.Token);
+
+        service.Verify(s => s.LoginAsync(request, cts.Token), Times.Once);
+    }
 }

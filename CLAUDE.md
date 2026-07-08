@@ -60,7 +60,18 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   password min length 8, `RequireNonAlphanumeric = false`.
 - Register flow: `AuthController` → `IAuthService.RegisterAsync` → `UserManager.CreateAsync`
   (hashes password; returns `IdentityResult` mapped to `Result`).
-- **Done:** register endpoint. **Next:** login + JWT access token → refresh tokens → auth middleware → protected endpoints → logout/revoke.
+- Login flow: `AuthController.Login` → `IAuthService.LoginAsync` → `FindByEmailAsync` +
+  `CheckPasswordAsync` → on success `IJwtTokenGenerator.GenerateAccessToken`. Bad credentials →
+  **401** with a single generic message (never reveal whether the email exists).
+- **JWT access token** ([Infrastructure/Identity/JwtTokenGenerator.cs](backend/CarOrganizer.Infrastructure/Identity/JwtTokenGenerator.cs)):
+  HS256, claims `sub`=user id, `email`, `jti`, plus `iss`/`aud`/`nbf`/`exp`. Lifetime 15 min.
+- **JWT config:** structural settings (`Issuer`/`Audience`/`AccessTokenMinutes`) live in committed
+  `appsettings.json`; the secret `Jwt:Key` lives in gitignored `appsettings.Development.json`
+  (or user-secrets / env in prod). `AddInfrastructure` throws if the key is missing or < 32 bytes.
+  Bound to `JwtSettings` via `Configure<JwtSettings>`.
+- **Done:** register, login + JWT access token. **Next:** refresh tokens → JWT bearer validation
+  middleware (`AddAuthentication`/`AddJwtBearer`) → protected `[Authorize]` endpoints → logout/revoke.
+  Note: tokens are **issued** but not yet **validated** on requests — that's the middleware step.
 
 ## Common commands
 
@@ -115,6 +126,6 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
 
 ## Roadmap (phase by phase)
 
-0 setup ✅ · 1 domain + DB ✅ · **2 JWT auth (register ✅, login/refresh next)** ·
+0 setup ✅ · 1 domain + DB ✅ · **2 JWT auth (register ✅, login ✅, refresh/validation next)** ·
 3 vehicles/garage · 4 maintenance records · 5 documents · 6 dashboard + reminders ·
 7 React frontend · 8 deploy to Railway · 9 feedback & iteration

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using CarOrganizer.Application.Auth;
 using CarOrganizer.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -98,6 +99,63 @@ public class AuthEndpointsTests : IDisposable
     {
         var response = await _client.PostAsJsonAsync(
             RegisterUrl, new { password = "Passw0rd123" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    // ---- Login -------------------------------------------------------------
+
+    private const string LoginUrl = "/api/auth/login";
+
+    [Fact]
+    public async Task Login_WithCorrectCredentials_ReturnsOkWithAToken()
+    {
+        var credentials = new { email = "login@example.com", password = "Passw0rd123" };
+        await _client.PostAsJsonAsync(RegisterUrl, credentials);
+
+        var response = await _client.PostAsJsonAsync(LoginUrl, credentials);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(body);
+        Assert.Equal(3, body!.AccessToken.Split('.').Length);
+        Assert.Equal("Bearer", body.TokenType);
+        Assert.True(body.AccessTokenExpiresAtUtc > DateTime.UtcNow);
+    }
+
+    [Fact]
+    public async Task Login_WithWrongPassword_ReturnsUnauthorized()
+    {
+        await _client.PostAsJsonAsync(RegisterUrl, new { email = "wrongpw@example.com", password = "Passw0rd123" });
+
+        var response = await _client.PostAsJsonAsync(
+            LoginUrl, new { email = "wrongpw@example.com", password = "NotThePassword1" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WithUnknownEmail_ReturnsUnauthorized()
+    {
+        var response = await _client.PostAsJsonAsync(
+            LoginUrl, new { email = "ghost@example.com", password = "Passw0rd123" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WithInvalidEmailFormat_ReturnsBadRequest()
+    {
+        var response = await _client.PostAsJsonAsync(
+            LoginUrl, new { email = "not-an-email", password = "Passw0rd123" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WithMissingPassword_ReturnsBadRequest()
+    {
+        var response = await _client.PostAsJsonAsync(LoginUrl, new { email = "nopwd@example.com" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

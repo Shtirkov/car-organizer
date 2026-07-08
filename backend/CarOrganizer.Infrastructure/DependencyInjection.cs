@@ -1,3 +1,4 @@
+using System.Text;
 using CarOrganizer.Application.Interfaces;
 using CarOrganizer.Domain.Entities;
 using CarOrganizer.Infrastructure.Identity;
@@ -33,6 +34,15 @@ public static class DependencyInjection
             })
             .AddEntityFrameworkStores<AppDbContext>();
 
+        var jwtSection = configuration.GetSection(JwtSettings.SectionName);
+        var jwtKey = jwtSection[nameof(JwtSettings.Key)];
+        if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+        {
+            throw new InvalidOperationException("Jwt:Key is missing or too short. Provide a signing key of at least 32 bytes ");
+        }
+
+        services.Configure<JwtSettings>(jwtSection);
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
 
         return services;

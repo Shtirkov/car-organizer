@@ -7,4 +7,7 @@ namespace CarOrganizer.Application.Interfaces;
 public interface IAuthService
 {
     Task<Result> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Validates credentials and, on success, issues an access token.</summary>
+    Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
 }
