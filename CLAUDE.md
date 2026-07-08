@@ -18,6 +18,7 @@ maintenance history, documents and reminders. Full product spec:
 | Frontend     | React (Vite + TypeScript)                                     |
 | Deployment   | Docker + GitHub Actions → Railway                             |
 | Tests        | xUnit, Moq, `Microsoft.AspNetCore.Mvc.Testing`, EF InMemory   |
+| API docs     | Swagger UI via `Swashbuckle.AspNetCore` (Dev only, `/swagger`) |
 
 SDK: .NET 10 (`dotnet --version` → 10.0.x). `dotnet-ef` tool installed globally.
 
@@ -86,6 +87,7 @@ dotnet test                                   # all tests
 dotnet test tests/CarOrganizer.UnitTests      # one project
 
 # Run the API (http profile → http://localhost:5066 ; https → 7150)
+# Swagger UI (Development only): http://localhost:5066/swagger — opens automatically (launchBrowser).
 dotnet run --project CarOrganizer.API --launch-profile http
 
 # EF Core migrations (run from backend/)
