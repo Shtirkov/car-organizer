@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using CarOrganizer.Application.Auth;
 using CarOrganizer.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CarOrganizer.API.Controllers;
@@ -31,6 +33,9 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
+
+        //"email": "admin@admin.com",
+        //"password": "Admin123@"
         var result = await _authService.LoginAsync(request, cancellationToken);
 
         if (!result.Succeeded)
@@ -39,5 +44,20 @@ public class AuthController : ControllerBase
         }
 
         return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Returns the identity carried by the current access token. Reaching this endpoint at all
+    /// proves the token was present, correctly signed and unexpired (the middleware validated it).
+    /// </summary>
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult Me()
+    {
+        return Ok(new
+        {
+            id = User.FindFirstValue("sub"),
+            email = User.FindFirstValue("email"),
+        });
     }
 }

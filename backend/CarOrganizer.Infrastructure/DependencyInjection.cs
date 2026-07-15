@@ -1,6 +1,7 @@
 using System.Text;
 using CarOrganizer.Application.Interfaces;
 using CarOrganizer.Domain.Entities;
+using CarOrganizer.Infrastructure.Authentication;
 using CarOrganizer.Infrastructure.Identity;
 using CarOrganizer.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -44,6 +45,8 @@ public static class DependencyInjection
         services.Configure<JwtSettings>(jwtSection);
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddJwtAuthentication(configuration);
 
         return services;
     }

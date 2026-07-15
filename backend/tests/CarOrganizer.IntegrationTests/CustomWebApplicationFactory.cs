@@ -13,6 +13,11 @@ namespace CarOrganizer.IntegrationTests;
 /// </summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
+    // Exposed so tests can forge tokens (valid, expired, wrong-key) that match this app's config.
+    public const string JwtIssuer = "test-issuer";
+    public const string JwtAudience = "test-audience";
+    public const string JwtKey = "integration-test-signing-key-at-least-32-bytes-long-0123456789";
+
     private readonly string _databaseName = "CarOrganizerTests-" + Guid.NewGuid();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -21,9 +26,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:Default", "Host=localhost;Database=dummy;Username=dummy;Password=dummy");
 
         // Self-contained JWT config so the app boots without relying on appsettings.Development.json.
-        builder.UseSetting("Jwt:Issuer", "test-issuer");
-        builder.UseSetting("Jwt:Audience", "test-audience");
-        builder.UseSetting("Jwt:Key", "integration-test-signing-key-at-least-32-bytes-long-0123456789");
+        builder.UseSetting("Jwt:Issuer", JwtIssuer);
+        builder.UseSetting("Jwt:Audience", JwtAudience);
+        builder.UseSetting("Jwt:Key", JwtKey);
         builder.UseSetting("Jwt:AccessTokenMinutes", "15");
 
         builder.ConfigureTestServices(services =>

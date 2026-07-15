@@ -1,3 +1,4 @@
+using CarOrganizer.API.Middleware;
 using CarOrganizer.Infrastructure;
 using Microsoft.OpenApi;
 
@@ -32,17 +33,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Car Organizer API v1");
-    });
-}
-
-app.UseHttpsRedirection();
-
-app.MapControllers();
+app.UseApiMiddleware();
 
 app.Run();
