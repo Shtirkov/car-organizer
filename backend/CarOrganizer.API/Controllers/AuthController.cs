@@ -46,6 +46,19 @@ public class AuthController : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _authService.RefreshAsync(request, cancellationToken);
+
+        if (!result.Succeeded)
+        {
+            return Unauthorized(new { errors = result.Errors });
+        }
+
+        return Ok(result.Value);
+    }
+
     /// <summary>
     /// Returns the identity carried by the current access token. Reaching this endpoint at all
     /// proves the token was present, correctly signed and unexpired (the middleware validated it).

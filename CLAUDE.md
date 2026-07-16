@@ -66,13 +66,23 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   **401** with a single generic message (never reveal whether the email exists).
 - **JWT access token** ([Infrastructure/Identity/JwtTokenGenerator.cs](backend/CarOrganizer.Infrastructure/Identity/JwtTokenGenerator.cs)):
   HS256, claims `sub`=user id, `email`, `jti`, plus `iss`/`aud`/`nbf`/`exp`. Lifetime 15 min.
-- **JWT config:** structural settings (`Issuer`/`Audience`/`AccessTokenMinutes`) live in committed
-  `appsettings.json`; the secret `Jwt:Key` lives in gitignored `appsettings.Development.json`
+- **JWT config:** structural settings (`Issuer`/`Audience`/`AccessTokenMinutes`/`RefreshTokenDays`) live
+  in committed `appsettings.json`; the secret `Jwt:Key` lives in gitignored `appsettings.Development.json`
   (or user-secrets / env in prod). `AddInfrastructure` throws if the key is missing or < 32 bytes.
   Bound to `JwtSettings` via `Configure<JwtSettings>`.
-- **Done:** register, login + JWT access token. **Next:** refresh tokens → JWT bearer validation
-  middleware (`AddAuthentication`/`AddJwtBearer`) → protected `[Authorize]` endpoints → logout/revoke.
-  Note: tokens are **issued** but not yet **validated** on requests — that's the middleware step.
+- **Token validation:** `AddJwtAuthentication` ([Infrastructure/Authentication/](backend/CarOrganizer.Infrastructure/Authentication/AuthenticationServiceCollectionExtensions.cs))
+  configures `AddJwtBearer` (`TokenValidationParameters`: issuer/audience/signing key/lifetime,
+  `ClockSkew = 0`, `MapInboundClaims = false` so claims stay `sub`/`email`). The pipeline step
+  (`UseAuthentication`/`UseAuthorization` + Swagger etc.) is grouped in `app.UseApiMiddleware()`
+  ([API/Middleware/](backend/CarOrganizer.API/Middleware/MiddlewareExtensions.cs)) — Program.cs calls it in one line.
+  JWT validation is **not** a hand-written middleware — it's the framework's `JwtBearerHandler`.
+- **Refresh tokens:** opaque random (`RandomNumberGenerator`, hex), stored **hashed** (SHA-256) as
+  [RefreshToken](backend/CarOrganizer.Domain/Entities/RefreshToken.cs) rows via `IRefreshTokenStore`.
+  Login issues an access+refresh pair; `POST /api/auth/refresh` validates the hash, checks `IsActive`
+  (not revoked/expired), then **rotates** (revoke old, issue new). Reuse of a rotated token → 401.
+- Endpoints: `POST register|login|refresh`, `GET me` (`[Authorize]`, reads `sub`/`email` from the token).
+- **Done:** register, login, JWT access token, bearer validation + `[Authorize]`, refresh + rotation.
+  **Next:** logout/revoke endpoint (revoke a user's refresh token(s)) — optional before Phase 3.
 
 ## Common commands
 
@@ -128,6 +138,6 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
 
 ## Roadmap (phase by phase)
 
-0 setup ✅ · 1 domain + DB ✅ · **2 JWT auth (register ✅, login ✅, refresh/validation next)** ·
+0 setup ✅ · 1 domain + DB ✅ · **2 JWT auth ✅ (register, login, validation, refresh + rotation)** ·
 3 vehicles/garage · 4 maintenance records · 5 documents · 6 dashboard + reminders ·
 7 React frontend · 8 deploy to Railway · 9 feedback & iteration

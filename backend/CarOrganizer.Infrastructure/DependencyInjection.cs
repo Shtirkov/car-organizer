@@ -44,6 +44,7 @@ public static class DependencyInjection
 
         services.Configure<JwtSettings>(jwtSection);
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
         services.AddScoped<IAuthService, AuthService>();
 
         services.AddJwtAuthentication(configuration);

@@ -121,6 +121,24 @@ public class AuthEndpointsTests : IDisposable
         Assert.Equal(3, body!.AccessToken.Split('.').Length);
         Assert.Equal("Bearer", body.TokenType);
         Assert.True(body.AccessTokenExpiresAtUtc > DateTime.UtcNow);
+        Assert.False(string.IsNullOrWhiteSpace(body.RefreshToken));
+        Assert.True(body.RefreshTokenExpiresAtUtc > DateTime.UtcNow);
+    }
+
+    [Fact]
+    public async Task Login_StoresTheRefreshTokenHashed_NotTheRawValue()
+    {
+        var credentials = new { email = "hashed@example.com", password = "Passw0rd123" };
+        await _client.PostAsJsonAsync(RegisterUrl, credentials);
+
+        var login = await _client.PostAsJsonAsync(LoginUrl, credentials);
+        var body = await login.Content.ReadFromJsonAsync<AuthResponse>();
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var stored = await db.RefreshTokens.SingleAsync();
+        Assert.NotEqual(body!.RefreshToken, stored.TokenHash);
+        Assert.Null(stored.RevokedAtUtc);
     }
 
     [Fact]
@@ -156,6 +174,63 @@ public class AuthEndpointsTests : IDisposable
     public async Task Login_WithMissingPassword_ReturnsBadRequest()
     {
         var response = await _client.PostAsJsonAsync(LoginUrl, new { email = "nopwd@example.com" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    // ---- Refresh -----------------------------------------------------------
+
+    private const string RefreshUrl = "/api/auth/refresh";
+
+    private async Task<AuthResponse> RegisterAndLoginAsync(string email)
+    {
+        var credentials = new { email, password = "Passw0rd123" };
+        await _client.PostAsJsonAsync(RegisterUrl, credentials);
+        var login = await _client.PostAsJsonAsync(LoginUrl, credentials);
+        return (await login.Content.ReadFromJsonAsync<AuthResponse>())!;
+    }
+
+    [Fact]
+    public async Task Refresh_WithValidToken_ReturnsANewDifferentTokenPair()
+    {
+        var loggedIn = await RegisterAndLoginAsync("refresh@example.com");
+
+        var response = await _client.PostAsJsonAsync(RefreshUrl, new { refreshToken = loggedIn.RefreshToken });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var refreshed = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(refreshed);
+        Assert.Equal(3, refreshed!.AccessToken.Split('.').Length);
+        // Rotation issues a brand-new refresh token.
+        Assert.NotEqual(loggedIn.RefreshToken, refreshed.RefreshToken);
+    }
+
+    [Fact]
+    public async Task Refresh_RotatesToken_SoTheOldRefreshTokenStopsWorking()
+    {
+        var loggedIn = await RegisterAndLoginAsync("rotate@example.com");
+
+        // First refresh succeeds and rotates the token.
+        var first = await _client.PostAsJsonAsync(RefreshUrl, new { refreshToken = loggedIn.RefreshToken });
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        // Re-using the now-rotated (revoked) token must fail.
+        var reuse = await _client.PostAsJsonAsync(RefreshUrl, new { refreshToken = loggedIn.RefreshToken });
+        Assert.Equal(HttpStatusCode.Unauthorized, reuse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Refresh_WithUnknownToken_ReturnsUnauthorized()
+    {
+        var response = await _client.PostAsJsonAsync(RefreshUrl, new { refreshToken = "not-a-real-token" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Refresh_WithMissingToken_ReturnsBadRequest()
+    {
+        var response = await _client.PostAsJsonAsync(RefreshUrl, new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

@@ -21,6 +21,7 @@ public class AppDbContext : IdentityUserContext<User, Guid>
     public DbSet<MaintenanceRecord> MaintenanceRecords => Set<MaintenanceRecord>();
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
