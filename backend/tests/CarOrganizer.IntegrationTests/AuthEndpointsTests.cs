@@ -234,4 +234,37 @@ public class AuthEndpointsTests : IDisposable
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    // ---- Logout ------------------------------------------------------------
+
+    private const string LogoutUrl = "/api/auth/logout";
+
+    [Fact]
+    public async Task Logout_ThenRefreshWithTheSameToken_ReturnsUnauthorized()
+    {
+        var loggedIn = await RegisterAndLoginAsync("logout@example.com");
+
+        var logout = await _client.PostAsJsonAsync(LogoutUrl, new { refreshToken = loggedIn.RefreshToken });
+        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+
+        // The refresh token was revoked by logout, so it can no longer be exchanged.
+        var refresh = await _client.PostAsJsonAsync(RefreshUrl, new { refreshToken = loggedIn.RefreshToken });
+        Assert.Equal(HttpStatusCode.Unauthorized, refresh.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logout_WithUnknownToken_ReturnsNoContent()
+    {
+        var response = await _client.PostAsJsonAsync(LogoutUrl, new { refreshToken = "not-a-real-token" });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logout_WithMissingToken_ReturnsBadRequest()
+    {
+        var response = await _client.PostAsJsonAsync(LogoutUrl, new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

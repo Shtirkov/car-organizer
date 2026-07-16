@@ -164,4 +164,35 @@ public class AuthControllerTests
 
         Assert.IsType<UnauthorizedObjectResult>(response);
     }
+
+    // ---- Logout ------------------------------------------------------------
+
+    [Fact]
+    public async Task Logout_ReturnsNoContent()
+    {
+        var service = new Mock<IAuthService>();
+        service
+            .Setup(s => s.LogoutAsync(It.IsAny<LogoutRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var sut = new AuthController(service.Object);
+
+        var response = await sut.Logout(new LogoutRequest("some-token"), CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(response);
+    }
+
+    [Fact]
+    public async Task Logout_PassesTheRequestToTheService()
+    {
+        var request = new LogoutRequest("some-token");
+        var service = new Mock<IAuthService>();
+        service
+            .Setup(s => s.LogoutAsync(It.IsAny<LogoutRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var sut = new AuthController(service.Object);
+
+        await sut.Logout(request, CancellationToken.None);
+
+        service.Verify(s => s.LogoutAsync(request, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

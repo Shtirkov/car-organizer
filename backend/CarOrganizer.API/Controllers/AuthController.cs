@@ -59,6 +59,15 @@ public class AuthController : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.LogoutAsync(request, cancellationToken);
+
+        // 204 regardless of whether the token existed — idempotent, and doesn't reveal token validity.
+        return NoContent();
+    }
+
     /// <summary>
     /// Returns the identity carried by the current access token. Reaching this endpoint at all
     /// proves the token was present, correctly signed and unexpired (the middleware validated it).

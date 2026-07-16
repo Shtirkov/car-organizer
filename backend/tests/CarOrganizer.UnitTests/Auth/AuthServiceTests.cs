@@ -267,4 +267,40 @@ public class AuthServiceTests
         Assert.False(result.Succeeded);
         _tokenGenerator.Verify(g => g.GenerateAccessToken(It.IsAny<User>()), Times.Never);
     }
+
+    // ---- Logout ------------------------------------------------------------
+
+    [Fact]
+    public async Task LogoutAsync_WithActiveToken_RevokesIt()
+    {
+        var stored = ActiveTokenFor("raw-refresh-token", new User { Email = "user@example.com" });
+        _refreshTokenStore.Setup(s => s.FindByHashAsync(stored.TokenHash, It.IsAny<CancellationToken>())).ReturnsAsync(stored);
+
+        await CreateSut().LogoutAsync(new LogoutRequest("raw-refresh-token"));
+
+        Assert.NotNull(stored.RevokedAtUtc);
+        _refreshTokenStore.Verify(s => s.UpdateAsync(stored, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_WithUnknownToken_DoesNothing()
+    {
+        _refreshTokenStore.Setup(s => s.FindByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((RefreshToken?)null);
+
+        await CreateSut().LogoutAsync(new LogoutRequest("does-not-exist"));
+
+        _refreshTokenStore.Verify(s => s.UpdateAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_WithAlreadyRevokedToken_IsANoOp()
+    {
+        var revoked = ActiveTokenFor("raw-refresh-token", new User { Email = "user@example.com" });
+        revoked.RevokedAtUtc = DateTime.UtcNow.AddMinutes(-5);
+        _refreshTokenStore.Setup(s => s.FindByHashAsync(revoked.TokenHash, It.IsAny<CancellationToken>())).ReturnsAsync(revoked);
+
+        await CreateSut().LogoutAsync(new LogoutRequest("raw-refresh-token"));
+
+        _refreshTokenStore.Verify(s => s.UpdateAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

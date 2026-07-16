@@ -80,9 +80,12 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   [RefreshToken](backend/CarOrganizer.Domain/Entities/RefreshToken.cs) rows via `IRefreshTokenStore`.
   Login issues an access+refresh pair; `POST /api/auth/refresh` validates the hash, checks `IsActive`
   (not revoked/expired), then **rotates** (revoke old, issue new). Reuse of a rotated token → 401.
-- Endpoints: `POST register|login|refresh`, `GET me` (`[Authorize]`, reads `sub`/`email` from the token).
-- **Done:** register, login, JWT access token, bearer validation + `[Authorize]`, refresh + rotation.
-  **Next:** logout/revoke endpoint (revoke a user's refresh token(s)) — optional before Phase 3.
+- **Logout:** `POST /api/auth/logout { refreshToken }` revokes that refresh token. **No `[Authorize]`**
+  (the refresh token is the credential; an expired access token must not block logout). Idempotent →
+  always **204**, even for unknown/already-revoked tokens (no token-probing).
+- Endpoints: `POST register|login|refresh|logout`, `GET me` (`[Authorize]`, reads `sub`/`email`).
+- **Phase 2 complete:** register, login, JWT access token, bearer validation + `[Authorize]`,
+  refresh + rotation, logout/revoke. All flows covered by unit + integration tests.
 
 ## Common commands
 
@@ -138,6 +141,6 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
 
 ## Roadmap (phase by phase)
 
-0 setup ✅ · 1 domain + DB ✅ · **2 JWT auth ✅ (register, login, validation, refresh + rotation)** ·
-3 vehicles/garage · 4 maintenance records · 5 documents · 6 dashboard + reminders ·
+0 setup ✅ · 1 domain + DB ✅ · 2 JWT auth ✅ (register, login, validation, refresh+rotation, logout) ·
+**3 vehicles/garage (next)** · 4 maintenance records · 5 documents · 6 dashboard + reminders ·
 7 React frontend · 8 deploy to Railway · 9 feedback & iteration

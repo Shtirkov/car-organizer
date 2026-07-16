@@ -13,4 +13,7 @@ public interface IAuthService
 
     /// <summary>Exchanges a valid refresh token for a new token pair, rotating the refresh token.</summary>
     Task<Result<AuthResponse>> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Revokes the given refresh token so it can no longer be used. Idempotent.</summary>
+    Task LogoutAsync(LogoutRequest request, CancellationToken cancellationToken = default);
 }

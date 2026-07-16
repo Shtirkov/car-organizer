@@ -82,6 +82,21 @@ public class AuthService : IAuthService
         return Result<AuthResponse>.Success(tokens);
     }
 
+    public async Task LogoutAsync(LogoutRequest request, CancellationToken cancellationToken = default)
+    {
+        var tokenHash = HashToken(request.RefreshToken);
+        var storedToken = await _refreshTokenStore.FindByHashAsync(tokenHash, cancellationToken);
+
+        // Idempotent: nothing to do if the token is unknown or already inactive.
+        if (storedToken is null || !storedToken.IsActive)
+        {
+            return;
+        }
+
+        storedToken.RevokedAtUtc = DateTime.UtcNow;
+        await _refreshTokenStore.UpdateAsync(storedToken, cancellationToken);
+    }
+
     /// <summary>Generates a fresh access token and a new persisted (hashed) refresh token for the user.</summary>
     private async Task<AuthResponse> IssueTokensAsync(User user, CancellationToken cancellationToken)
     {
