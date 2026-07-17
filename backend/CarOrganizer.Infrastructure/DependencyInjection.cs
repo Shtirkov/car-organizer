@@ -4,6 +4,7 @@ using CarOrganizer.Domain.Entities;
 using CarOrganizer.Infrastructure.Authentication;
 using CarOrganizer.Infrastructure.Identity;
 using CarOrganizer.Infrastructure.Persistence;
+using CarOrganizer.Infrastructure.Vehicles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -46,6 +47,9 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddScoped<IVehicleStore, VehicleStore>();
+        services.AddScoped<IVehicleService, VehicleService>();
 
         services.AddJwtAuthentication(configuration);
 

@@ -16,6 +16,14 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
         builder.Property(v => v.RegistrationPlate).HasMaxLength(20);
         builder.Property(v => v.Engine).HasMaxLength(80);
 
+        // No navigation property on Vehicle: the Domain never needs to walk to the owner, and
+        // leaving it off keeps Vehicle free of the Identity type. Deleting a user takes their
+        // garage — and, by the cascades below, everything hanging off it.
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(v => v.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany(v => v.MaintenanceRecords)
             .WithOne(m => m.Vehicle)
             .HasForeignKey(m => m.VehicleId)

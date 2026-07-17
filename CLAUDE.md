@@ -7,6 +7,23 @@ maintenance history, documents and reminders. Full product spec:
 > This file is the quick reference. Update it whenever conventions, structure, or the
 > roadmap change so future sessions don't have to re-scan the whole project.
 
+## What we're building (PRD digest)
+
+Car owners lose invoices and forget service intervals, insurance renewals and inspections —
+records live scattered across paper, email and memory. The app centralizes them.
+
+**MVP features:** auth · garage of one or more vehicles · vehicle details (VIN, mileage, engine,
+registration, year) · maintenance records (type, date, mileage, cost, notes) · document upload
+(images/PDF) · dashboard with upcoming reminders · basic search and filtering.
+
+**Explicit non-goals for MVP:** no mechanic marketplace, no parts store, no AI recommendations,
+no fleet management. Fuel tracking, expense analytics and PDF export are post-MVP (the `FuelEntry`
+and `Expense` entities in the PRD's domain model are deliberately **not** built yet).
+
+> ⚠️ The PRD's milestone numbers are offset from our roadmap below: PRD "Phase 3 Authentication"
+> = our Phase 2, PRD "Phase 4 Vehicle management" = our Phase 3, and so on. When a phase number
+> is mentioned, it means **our** roadmap unless the PRD is named explicitly.
+
 ## Tech stack
 
 | Layer        | Technology                                                    |
@@ -15,7 +32,7 @@ maintenance history, documents and reminders. Full product spec:
 | Database     | PostgreSQL + EF Core 10 (`Npgsql.EntityFrameworkCore.PostgreSQL`) |
 | Auth         | Own JWT via ASP.NET **Identity** (access + refresh tokens)    |
 | File storage | Cloudflare R2 (S3-compatible), planned                        |
-| Frontend     | React (Vite + TypeScript)                                     |
+| Frontend     | React 19 (Vite + TypeScript) — **scaffolded only**, still the stock starter (Phase 7) |
 | Deployment   | Docker + GitHub Actions → Railway                             |
 | Tests        | xUnit, Moq, `Microsoft.AspNetCore.Mvc.Testing`, EF InMemory   |
 | API docs     | Swagger UI via `Swashbuckle.AspNetCore` (Dev only, `/swagger`) |
@@ -46,11 +63,21 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
 
 ### Conventions
 - **Interfaces go in `Application/Interfaces/`** (namespace `CarOrganizer.Application.Interfaces`), not next to their DTOs.
-- DTOs are `record`s in a feature folder (e.g. `Application/Auth/`).
+- DTOs are `record`s in a feature folder (e.g. `Application/Auth/`, `Application/Vehicles/`).
+  Separate records per operation even when the shape is identical (`Login`/`Register`, `Create`/`Update`).
 - Public types get concise `<summary>` XML doc comments (match existing style).
 - Register Infrastructure services in `Infrastructure/DependencyInjection.cs` (`AddInfrastructure`).
+- **Service implementations live in Infrastructure**, one folder per feature (`Identity/`, `Vehicles/`),
+  even when — like `VehicleService` — they have no infrastructure dependency of their own. Application
+  stays contracts-only, so there is no `AddApplication` to maintain.
+- **Feature shape** (established by vehicles, follow it for records/documents/reminders):
+  `I<Feature>Store` (EF-backed, in `Infrastructure/Persistence/`) ← `I<Feature>Service`
+  (mapping + rules, in `Infrastructure/<Feature>/`) ← controller (HTTP only).
+- **`Result` vs plain values:** `Result` exists to carry *real* failures (Identity's error lists).
+  Plain CRUD has none — model validation catches shape errors before the service runs, and
+  "no such row" is said by `null`/`false`. Don't wrap those in an always-empty `Result`.
 
-## Auth (Phase 2 — in progress)
+## Auth (Phase 2 ✅)
 
 - `User : IdentityUser<Guid>` ([Domain/Entities/User.cs](backend/CarOrganizer.Domain/Entities/User.cs)).
   Generic `IdentityUser<TKey>` does **not** auto-assign `Id`, so the ctor sets `Id = Guid.NewGuid()`.
@@ -87,6 +114,29 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
 - **Phase 2 complete:** register, login, JWT access token, bearer validation + `[Authorize]`,
   refresh + rotation, logout/revoke. All flows covered by unit + integration tests.
 
+## Vehicles / garage (Phase 3 ✅)
+
+- Endpoints ([API/Controllers/VehiclesController.cs](backend/CarOrganizer.API/Controllers/VehiclesController.cs)),
+  all `[Authorize]` at the controller level:
+  `GET /api/vehicles` · `GET /api/vehicles/{id:guid}` · `POST /api/vehicles` (201 + `Location`) ·
+  `PUT /api/vehicles/{id:guid}` · `DELETE /api/vehicles/{id:guid}` (204).
+- **The owner always comes from the token's `sub` claim, never from the body.** `User.GetUserId()`
+  ([API/Extensions/ClaimsPrincipalExtensions.cs](backend/CarOrganizer.API/Extensions/ClaimsPrincipalExtensions.cs))
+  parses it; it throws on a missing/non-Guid `sub`, which is an assertion about our own token
+  generator (a forged token never reaches the action), not input validation.
+- **Someone else's vehicle → 404, never 403.** A 403 would confirm the id exists. `IVehicleStore`'s
+  lookups take `(vehicleId, ownerId)` so ownership is part of the question and can't be forgotten
+  by a caller. Covered by integration tests, including that the two 404 bodies are byte-identical
+  (modulo the per-request `traceId`).
+- `VehicleResponse` deliberately omits `OwnerId` — the caller is always the owner.
+- `PUT` is a full replacement: every editable field is written, so omitting an optional one clears
+  it. `OwnerId` is not editable — a vehicle can't change hands.
+- Validation bounds are consts in [Application/Vehicles/VehicleLimits.cs](backend/CarOrganizer.Application/Vehicles/VehicleLimits.cs)
+  (attributes need compile-time constants, and Create/Update must not drift apart).
+- **`Vehicle.OwnerId` now has a real FK** to `AspNetUsers` (cascade delete), added in the
+  `AddVehicleOwnerForeignKey` migration. Configured with `HasOne<User>().WithMany()` — no navigation
+  property, so `Vehicle` stays free of the Identity type.
+
 ## Common commands
 
 ```bash
@@ -121,6 +171,11 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
   - `CustomWebApplicationFactory` swaps Npgsql for **EF InMemory** and creates a fresh DB per factory.
   - A new factory is built **per test** (`IDisposable`) for isolation.
   - Assert HTTP status codes; read persisted state via a service scope (`factory.Services.CreateScope()`).
+  - Two ways to authenticate a client, and the choice matters: `TestJwt.Create(sub: ...)` forges a
+    token for a user that doesn't exist (fine for testing the *validation middleware*), while
+    `VehicleEndpointsTests.SignUpAsync` registers + logs in for real. **Anything that writes a row
+    referencing a user must sign up for real** — see the InMemory/FK gotcha below.
+  - For cross-user rules, drive two clients off one factory (they share the database).
 
 ## Gotchas learned (don't rediscover these)
 
@@ -138,9 +193,23 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
 - **Connection-string guard:** `AddInfrastructure` throws if `ConnectionStrings:Default` is
   missing; the test factory sets a dummy value before replacing the DbContext.
 - `IdentityUser<Guid>` (id in `Microsoft.Extensions.Identity.Stores`, not `.Core`).
+- **EF InMemory does not enforce foreign keys.** A test can happily write a `Vehicle` whose
+  `OwnerId` points at nobody, and it would only blow up on real Postgres. So integration tests that
+  persist owned rows register a real user instead of forging a token with a random `sub`. Keep this
+  in mind for every future FK — the test suite will *not* catch a violation for you.
+- **ProblemDetails bodies carry a fresh `traceId` per request**, so two responses that should be
+  indistinguishable aren't byte-equal. Strip `traceId` before comparing (see
+  `VehicleEndpointsTests.BodyWithoutTraceIdAsync`), rather than weakening the assertion to the
+  status code alone.
 
 ## Roadmap (phase by phase)
 
 0 setup ✅ · 1 domain + DB ✅ · 2 JWT auth ✅ (register, login, validation, refresh+rotation, logout) ·
-**3 vehicles/garage (next)** · 4 maintenance records · 5 documents · 6 dashboard + reminders ·
-7 React frontend · 8 deploy to Railway · 9 feedback & iteration
+3 vehicles/garage ✅ (CRUD, owner-scoped) · **4 maintenance records (next)** · 5 documents ·
+6 dashboard + reminders · 7 React frontend · 8 deploy to Railway · 9 feedback & iteration
+
+Deferred, worth picking up when the phase that needs it arrives:
+- **Search/filtering** (an MVP feature in the PRD): the garage list is unfiltered and unpaged.
+  Natural home is Phase 6, once maintenance records give it something to search across.
+- **Mileage coherence:** `Vehicle.Mileage` and `MaintenanceRecord.Mileage` can currently disagree
+  (a service at 200k km on a car recorded at 190k). Decide the rule in Phase 4.

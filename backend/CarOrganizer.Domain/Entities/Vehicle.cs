@@ -7,7 +7,7 @@ namespace CarOrganizer.Domain.Entities;
 /// </summary>
 public class Vehicle : BaseEntity
 {
-    /// <summary>Identity user who owns the vehicle. FK to the Identity user is wired in Phase 2.</summary>
+    /// <summary>Identity user who owns the vehicle. Every query for a vehicle is scoped by this.</summary>
     public Guid OwnerId { get; set; }
 
     public string Make { get; set; } = string.Empty;
