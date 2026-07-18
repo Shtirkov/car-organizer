@@ -11,20 +11,13 @@ public static class VehicleMileage
     public const string CurrentBelowPurchaseMessage =
         "CurrentMileage cannot be lower than PurchaseMileage — an odometer does not run backwards.";
 
-    public const string NegativeMileageMessage =
-        "Mileage readings cannot be negative.";
-
     /// <summary>
     /// Yields a validation error when a supplied current reading is below the purchase reading.
     /// A <c>null</c> current reading is fine — the caller is saying "same as purchase".
     /// </summary>
     public static IEnumerable<ValidationResult> ValidateOrder(int purchaseMileage, int? currentMileage)
     {
-        if(currentMileage < 0 || purchaseMileage < 0)
-        {
-            yield return new ValidationResult(NegativeMileageMessage, ["PurchaseMileage", "CurrentMileage"]);
-        }
-        else if (currentMileage.HasValue && currentMileage.Value < purchaseMileage)
+        if (currentMileage.HasValue && currentMileage.Value < purchaseMileage)
         {
             yield return new ValidationResult(CurrentBelowPurchaseMessage, ["CurrentMileage"]);
         }
