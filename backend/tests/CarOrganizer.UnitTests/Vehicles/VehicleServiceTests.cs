@@ -28,17 +28,18 @@ public class VehicleServiceTests
         Make = "Audi",
         Model = "A4",
         Year = 2015,
-        Mileage = 190_000,
+        PurchaseMileage = 150_000,
+        CurrentMileage = 190_000,
         Vin = "WAUZZZ8K1FA123456",
         RegistrationPlate = "CB1234AB",
         Engine = "2.0 TDI",
     };
 
     private static CreateVehicleRequest SampleCreateRequest() =>
-        new("Audi", "A4", 2015, 190_000, "WAUZZZ8K1FA123456", "CB1234AB", "2.0 TDI");
+        new("Audi", "A4", 2015, 150_000, 190_000, "WAUZZZ8K1FA123456", "CB1234AB", "2.0 TDI");
 
     private static UpdateVehicleRequest SampleUpdateRequest() =>
-        new("Audi", "A6", 2016, 200_000, "WAUZZZ8K1FA654321", "CB4321BA", "3.0 TDI");
+        new("Audi", "A6", 2016, 150_000, 200_000, "WAUZZZ8K1FA654321", "CB4321BA", "3.0 TDI");
 
     [Fact]
     public async Task CreateAsync_PersistsTheVehicleForTheCallingOwner()
@@ -69,10 +70,47 @@ public class VehicleServiceTests
         Assert.Equal("Audi", persisted!.Make);
         Assert.Equal("A4", persisted.Model);
         Assert.Equal(2015, persisted.Year);
-        Assert.Equal(190_000, persisted.Mileage);
+        Assert.Equal(150_000, persisted.PurchaseMileage);
+        Assert.Equal(190_000, persisted.CurrentMileage);
         Assert.Equal("WAUZZZ8K1FA123456", persisted.Vin);
         Assert.Equal("CB1234AB", persisted.RegistrationPlate);
         Assert.Equal("2.0 TDI", persisted.Engine);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithoutACurrentReading_DefaultsItToThePurchaseReading()
+    {
+        Vehicle? persisted = null;
+        _store
+            .Setup(s => s.AddAsync(It.IsAny<Vehicle>(), It.IsAny<CancellationToken>()))
+            .Callback<Vehicle, CancellationToken>((v, _) => persisted = v)
+            .Returns(Task.CompletedTask);
+
+        await _sut.CreateAsync(
+            OwnerId,
+            new CreateVehicleRequest("Dacia", "Logan", 2010, 120_000, null, null, null, null),
+            CancellationToken.None);
+
+        Assert.Equal(120_000, persisted!.PurchaseMileage);
+        Assert.Equal(120_000, persisted.CurrentMileage);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithACurrentReading_KeepsItDistinctFromPurchase()
+    {
+        Vehicle? persisted = null;
+        _store
+            .Setup(s => s.AddAsync(It.IsAny<Vehicle>(), It.IsAny<CancellationToken>()))
+            .Callback<Vehicle, CancellationToken>((v, _) => persisted = v)
+            .Returns(Task.CompletedTask);
+
+        await _sut.CreateAsync(
+            OwnerId,
+            new CreateVehicleRequest("Dacia", "Logan", 2010, 120_000, 175_000, null, null, null),
+            CancellationToken.None);
+
+        Assert.Equal(120_000, persisted!.PurchaseMileage);
+        Assert.Equal(175_000, persisted.CurrentMileage);
     }
 
     [Fact]
@@ -98,7 +136,7 @@ public class VehicleServiceTests
             .Returns(Task.CompletedTask);
 
         await _sut.CreateAsync(
-            OwnerId, new CreateVehicleRequest("Dacia", "Logan", 2010, 120_000, null, null, null), CancellationToken.None);
+            OwnerId, new CreateVehicleRequest("Dacia", "Logan", 2010, 120_000, null, null, null, null), CancellationToken.None);
 
         Assert.Null(persisted!.Vin);
         Assert.Null(persisted.RegistrationPlate);
@@ -194,7 +232,8 @@ public class VehicleServiceTests
 
         Assert.Equal("A6", response!.Model);
         Assert.Equal(2016, response.Year);
-        Assert.Equal(200_000, response.Mileage);
+        Assert.Equal(150_000, response.PurchaseMileage);
+        Assert.Equal(200_000, response.CurrentMileage);
         Assert.Equal("WAUZZZ8K1FA654321", response.Vin);
         Assert.Equal("CB4321BA", response.RegistrationPlate);
         Assert.Equal("3.0 TDI", response.Engine);
@@ -209,7 +248,7 @@ public class VehicleServiceTests
             .ReturnsAsync(vehicle);
 
         var response = await _sut.UpdateAsync(
-            OwnerId, vehicle.Id, new UpdateVehicleRequest("Audi", "A4", 2015, 190_000, null, null, null), CancellationToken.None);
+            OwnerId, vehicle.Id, new UpdateVehicleRequest("Audi", "A4", 2015, 150_000, 190_000, null, null, null), CancellationToken.None);
 
         Assert.Null(response!.Vin);
         Assert.Null(response.RegistrationPlate);

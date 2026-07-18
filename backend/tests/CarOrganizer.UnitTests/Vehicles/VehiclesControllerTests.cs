@@ -34,13 +34,13 @@ public class VehiclesControllerTests
     }
 
     private static VehicleResponse SampleResponse(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), "Audi", "A4", 2015, 190_000, null, null, null, DateTime.UtcNow, null);
+        new(id ?? Guid.NewGuid(), "Audi", "A4", 2015, 150_000, 190_000, null, null, null, DateTime.UtcNow, null);
 
     private static CreateVehicleRequest SampleCreateRequest() =>
-        new("Audi", "A4", 2015, 190_000, null, null, null);
+        new("Audi", "A4", 2015, 150_000, 190_000, null, null, null);
 
     private static UpdateVehicleRequest SampleUpdateRequest() =>
-        new("Audi", "A6", 2016, 200_000, null, null, null);
+        new("Audi", "A6", 2016, 150_000, 200_000, null, null, null);
 
     [Fact]
     public async Task List_ReturnsOkWithTheGarage()

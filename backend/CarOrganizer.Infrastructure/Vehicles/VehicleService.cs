@@ -26,7 +26,9 @@ public class VehicleService : IVehicleService
             Make = request.Make,
             Model = request.Model,
             Year = request.Year,
-            Mileage = request.Mileage,
+            PurchaseMileage = request.PurchaseMileage,
+            // Omitted current reading means "same as purchase" — a car only just acquired.
+            CurrentMileage = request.CurrentMileage ?? request.PurchaseMileage,
             Vin = request.Vin,
             RegistrationPlate = request.RegistrationPlate,
             Engine = request.Engine,
@@ -66,7 +68,8 @@ public class VehicleService : IVehicleService
         vehicle.Make = request.Make;
         vehicle.Model = request.Model;
         vehicle.Year = request.Year;
-        vehicle.Mileage = request.Mileage;
+        vehicle.PurchaseMileage = request.PurchaseMileage;
+        vehicle.CurrentMileage = request.CurrentMileage;
         vehicle.Vin = request.Vin;
         vehicle.RegistrationPlate = request.RegistrationPlate;
         vehicle.Engine = request.Engine;
@@ -96,7 +99,8 @@ public class VehicleService : IVehicleService
             vehicle.Make,
             vehicle.Model,
             vehicle.Year,
-            vehicle.Mileage,
+            vehicle.PurchaseMileage,
+            vehicle.CurrentMileage,
             vehicle.Vin,
             vehicle.RegistrationPlate,
             vehicle.Engine,

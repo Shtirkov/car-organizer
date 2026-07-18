@@ -14,8 +14,14 @@ public class Vehicle : BaseEntity
     public string Model { get; set; } = string.Empty;
     public int Year { get; set; }
 
-    /// <summary>Current odometer reading (km).</summary>
-    public int Mileage { get; set; }
+    /// <summary>Odometer reading (km) when the owner acquired the vehicle. A fixed historical fact.</summary>
+    public int PurchaseMileage { get; set; }
+
+    /// <summary>
+    /// Current odometer reading (km). Advanced automatically whenever a maintenance record is logged
+    /// at a higher reading; never below <see cref="PurchaseMileage"/>.
+    /// </summary>
+    public int CurrentMileage { get; set; }
 
     public string? Vin { get; set; }
     public string? RegistrationPlate { get; set; }

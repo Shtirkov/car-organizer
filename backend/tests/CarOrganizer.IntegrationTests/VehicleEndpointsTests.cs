@@ -56,7 +56,8 @@ public class VehicleEndpointsTests : IDisposable
             make = "Audi",
             model,
             year = 2015,
-            mileage = 190_000,
+            purchaseMileage = 150_000,
+            currentMileage = 190_000,
             vin = "WAUZZZ8K1FA123456",
             registrationPlate = "CB1234AB",
             engine = "2.0 TDI",
@@ -138,7 +139,8 @@ public class VehicleEndpointsTests : IDisposable
 
         Assert.Equal(user.Id, vehicle.OwnerId);
         Assert.Equal("Audi", vehicle.Make);
-        Assert.Equal(190_000, vehicle.Mileage);
+        Assert.Equal(150_000, vehicle.PurchaseMileage);
+        Assert.Equal(190_000, vehicle.CurrentMileage);
     }
 
     [Fact]
@@ -170,7 +172,7 @@ public class VehicleEndpointsTests : IDisposable
         using var client = await SignUpAsync("nomake@example.com");
 
         var response = await client.PostAsJsonAsync(
-            VehiclesUrl, new { model = "A4", year = 2015, mileage = 1000 });
+            VehiclesUrl, new { model = "A4", year = 2015, purchaseMileage = 1000 });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -181,7 +183,7 @@ public class VehicleEndpointsTests : IDisposable
         using var client = await SignUpAsync("badyear@example.com");
 
         var response = await client.PostAsJsonAsync(
-            VehiclesUrl, new { make = "Audi", model = "A4", year = 1750, mileage = 1000 });
+            VehiclesUrl, new { make = "Audi", model = "A4", year = 1750, purchaseMileage = 1000 });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -192,7 +194,19 @@ public class VehicleEndpointsTests : IDisposable
         using var client = await SignUpAsync("badmileage@example.com");
 
         var response = await client.PostAsJsonAsync(
-            VehiclesUrl, new { make = "Audi", model = "A4", year = 2015, mileage = -1 });
+            VehiclesUrl, new { make = "Audi", model = "A4", year = 2015, purchaseMileage = -1 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithCurrentBelowPurchase_ReturnsBadRequest()
+    {
+        using var client = await SignUpAsync("mileageorder@example.com");
+
+        // The odometer can't read lower now than when the car was bought.
+        var response = await client.PostAsJsonAsync(
+            VehiclesUrl, new { make = "Audi", model = "A4", year = 2015, purchaseMileage = 150_000, currentMileage = 140_000 });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -203,7 +217,7 @@ public class VehicleEndpointsTests : IDisposable
         using var client = await SignUpAsync("badvin@example.com");
 
         var response = await client.PostAsJsonAsync(
-            VehiclesUrl, new { make = "Audi", model = "A4", year = 2015, mileage = 1000, vin = new string('X', 18) });
+            VehiclesUrl, new { make = "Audi", model = "A4", year = 2015, purchaseMileage = 1000, vin = new string('X', 18) });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -214,12 +228,15 @@ public class VehicleEndpointsTests : IDisposable
         using var client = await SignUpAsync("minimal@example.com");
 
         var response = await client.PostAsJsonAsync(
-            VehiclesUrl, new { make = "Dacia", model = "Logan", year = 2010, mileage = 120_000 });
+            VehiclesUrl, new { make = "Dacia", model = "Logan", year = 2010, purchaseMileage = 120_000 });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var vehicle = await response.Content.ReadFromJsonAsync<VehicleResponse>();
         Assert.Null(vehicle!.Vin);
         Assert.Null(vehicle.Engine);
+        // Current reading defaults to the purchase reading when omitted.
+        Assert.Equal(120_000, vehicle.PurchaseMileage);
+        Assert.Equal(120_000, vehicle.CurrentMileage);
     }
 
     // ---------- read ----------
@@ -305,12 +322,12 @@ public class VehicleEndpointsTests : IDisposable
 
         var response = await client.PutAsJsonAsync(
             $"{VehiclesUrl}/{created.Id}",
-            new { make = "Audi", model = "A6", year = 2016, mileage = 200_000, engine = "3.0 TDI" });
+            new { make = "Audi", model = "A6", year = 2016, purchaseMileage = 150_000, currentMileage = 200_000, engine = "3.0 TDI" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var vehicle = await response.Content.ReadFromJsonAsync<VehicleResponse>();
         Assert.Equal("A6", vehicle!.Model);
-        Assert.Equal(200_000, vehicle.Mileage);
+        Assert.Equal(200_000, vehicle.CurrentMileage);
     }
 
     [Fact]
@@ -321,14 +338,14 @@ public class VehicleEndpointsTests : IDisposable
 
         await client.PutAsJsonAsync(
             $"{VehiclesUrl}/{created.Id}",
-            new { make = "Audi", model = "A6", year = 2016, mileage = 200_000 });
+            new { make = "Audi", model = "A6", year = 2016, purchaseMileage = 150_000, currentMileage = 200_000 });
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var vehicle = await db.Vehicles.SingleAsync(v => v.Id == created.Id);
 
         Assert.Equal("A6", vehicle.Model);
-        Assert.Equal(200_000, vehicle.Mileage);
+        Assert.Equal(200_000, vehicle.CurrentMileage);
     }
 
     [Fact]
@@ -340,7 +357,7 @@ public class VehicleEndpointsTests : IDisposable
 
         var response = await client.PutAsJsonAsync(
             $"{VehiclesUrl}/{created.Id}",
-            new { make = "Audi", model = "A6", year = 2016, mileage = 200_000 });
+            new { make = "Audi", model = "A6", year = 2016, purchaseMileage = 150_000, currentMileage = 200_000 });
 
         var vehicle = await response.Content.ReadFromJsonAsync<VehicleResponse>();
         Assert.NotNull(vehicle!.UpdatedAtUtc);
@@ -352,7 +369,7 @@ public class VehicleEndpointsTests : IDisposable
         using var client = await SignUpAsync("updateunknown@example.com");
 
         var response = await client.PutAsJsonAsync(
-            $"{VehiclesUrl}/{Guid.NewGuid()}", new { make = "Audi", model = "A6", year = 2016, mileage = 1 });
+            $"{VehiclesUrl}/{Guid.NewGuid()}", new { make = "Audi", model = "A6", year = 2016, purchaseMileage = 1, currentMileage = 1 });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -364,7 +381,7 @@ public class VehicleEndpointsTests : IDisposable
         var created = await CreateVehicleAsync(client);
 
         var response = await client.PutAsJsonAsync(
-            $"{VehiclesUrl}/{created.Id}", new { model = "A6", year = 2016, mileage = 1 });
+            $"{VehiclesUrl}/{created.Id}", new { model = "A6", year = 2016, purchaseMileage = 1 });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -449,7 +466,7 @@ public class VehicleEndpointsTests : IDisposable
 
         var response = await bob.PutAsJsonAsync(
             $"{VehiclesUrl}/{aliceVehicle.Id}",
-            new { make = "Bob", model = "Stolen", year = 2020, mileage = 0 });
+            new { make = "Bob", model = "Stolen", year = 2020, purchaseMileage = 0, currentMileage = 0 });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
