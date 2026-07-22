@@ -3,6 +3,7 @@ using CarOrganizer.Application.Interfaces;
 using CarOrganizer.Domain.Entities;
 using CarOrganizer.Infrastructure.Authentication;
 using CarOrganizer.Infrastructure.Identity;
+using CarOrganizer.Infrastructure.MaintenanceRecords;
 using CarOrganizer.Infrastructure.Persistence;
 using CarOrganizer.Infrastructure.Vehicles;
 using Microsoft.AspNetCore.Identity;
@@ -50,6 +51,9 @@ public static class DependencyInjection
 
         services.AddScoped<IVehicleStore, VehicleStore>();
         services.AddScoped<IVehicleService, VehicleService>();
+
+        services.AddScoped<IMaintenanceRecordStore, MaintenanceRecordStore>();
+        services.AddScoped<IMaintenanceRecordService, MaintenanceRecordService>();
 
         services.AddJwtAuthentication(configuration);
 
