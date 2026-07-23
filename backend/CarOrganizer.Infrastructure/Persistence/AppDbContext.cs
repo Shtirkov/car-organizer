@@ -19,6 +19,7 @@ public class AppDbContext : IdentityUserContext<User, Guid>
 
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<MaintenanceRecord> MaintenanceRecords => Set<MaintenanceRecord>();
+    public DbSet<VehicleObligation> Obligations => Set<VehicleObligation>();
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

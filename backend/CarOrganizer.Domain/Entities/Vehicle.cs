@@ -32,4 +32,5 @@ public class Vehicle : BaseEntity
     public ICollection<MaintenanceRecord> MaintenanceRecords { get; set; } = new List<MaintenanceRecord>();
     public ICollection<Document> Documents { get; set; } = new List<Document>();
     public ICollection<Reminder> Reminders { get; set; } = new List<Reminder>();
+    public ICollection<VehicleObligation> Obligations { get; set; } = new List<VehicleObligation>();
 }
