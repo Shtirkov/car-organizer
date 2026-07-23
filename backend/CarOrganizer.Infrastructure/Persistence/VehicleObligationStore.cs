@@ -22,10 +22,11 @@ public class VehicleObligationStore : IVehicleObligationStore
 
     public async Task<IReadOnlyList<VehicleObligation>> ListByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
+        // Soonest to expire first — the order the owner cares about ("what do I need to renew?").
         return await _dbContext.Obligations
             .Where(o => o.VehicleId == vehicleId)
-            .OrderByDescending(o => o.ValidUntil)
-            .ThenByDescending(o => o.CreatedAtUtc)
+            .OrderBy(o => o.ValidUntil)
+            .ThenBy(o => o.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
 

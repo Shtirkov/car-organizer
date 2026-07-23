@@ -272,7 +272,7 @@ public class VehicleObligationEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task List_ReturnsObligationsLatestExpiryFirst()
+    public async Task List_ReturnsObligationsSoonestExpiryFirst()
     {
         using var client = await SignUpAsync("ob.order@example.com");
         var vehicle = await CreateVehicleAsync(client);
@@ -284,7 +284,7 @@ public class VehicleObligationEndpointsTests : IDisposable
         var obligations = await client.GetFromJsonAsync<List<VehicleObligationResponse>>(ObligationsUrl(vehicle.Id));
 
         Assert.Equal(
-            [new DateOnly(2027, 3, 15), new DateOnly(2026, 12, 31), new DateOnly(2026, 6, 30)],
+            [new DateOnly(2026, 6, 30), new DateOnly(2026, 12, 31), new DateOnly(2027, 3, 15)],
             obligations!.Select(o => o.ValidUntil));
     }
 

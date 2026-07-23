@@ -14,7 +14,7 @@ public interface IVehicleObligationStore
 {
     Task AddAsync(VehicleObligation obligation, CancellationToken cancellationToken = default);
 
-    /// <summary>Every obligation for the vehicle, latest expiry first.</summary>
+    /// <summary>Every obligation for the vehicle, soonest to expire first.</summary>
     Task<IReadOnlyList<VehicleObligation>> ListByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
 
     /// <summary>The vehicle's obligation with this id, or <c>null</c> if there is no such obligation.</summary>

@@ -136,6 +136,52 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
 - **`Vehicle.OwnerId` now has a real FK** to `AspNetUsers` (cascade delete), added in the
   `AddVehicleOwnerForeignKey` migration. Configured with `HasOne<User>().WithMany()` — no navigation
   property, so `Vehicle` stays free of the Identity type.
+- **Mileage is two fields** (since Phase 4): `PurchaseMileage` (odometer at acquisition, fixed) and
+  `CurrentMileage` (advanced by maintenance records). Create takes `PurchaseMileage` (required) +
+  optional `CurrentMileage` (defaults to purchase); the `CurrentMileage >= PurchaseMileage` invariant
+  is a cross-field rule in `VehicleMileage.ValidateOrder`, wired via `IValidatableObject` on both
+  request records → **400** (keeps `VehicleService` failure-free). `SplitVehicleMileage` migration
+  renamed the old `Mileage` column and seeded `CurrentMileage` from it.
+
+## Maintenance records (Phase 4 ✅)
+
+- Nested under the vehicle: `GET|POST /api/vehicles/{vehicleId:guid}/maintenance-records`,
+  `GET|PUT|DELETE .../{id:guid}` ([API/Controllers/MaintenanceRecordsController.cs](backend/CarOrganizer.API/Controllers/MaintenanceRecordsController.cs)).
+  Owner from the token, vehicle from the route. The `MaintenanceRecord` entity + table already existed
+  from Phase 1, so **no migration** — only the store/service/controller/DTO layer was added.
+- **Feature shape unchanged from vehicles:** `IMaintenanceRecordStore` (EF, lookups scoped by
+  `vehicleId`) ← `IMaintenanceRecordService` ← controller. Plain values, **no `Result`** — with
+  auto-advance there's no domain failure to report; `null`/`false` = "not your vehicle or no such record".
+- **Mileage auto-advance:** `MaintenanceRecordService` depends on `IVehicleStore` **and** the record
+  store. On create/update it loads the owner's vehicle (this is also the ownership gate), and if the
+  record's mileage exceeds `CurrentMileage`, bumps it. **One `SaveChanges` commits both** the record
+  and the bump — the vehicle is tracked by the same scoped `AppDbContext` the record store saves
+  through, so the service mutates it in memory and does **not** call `_vehicleStore.UpdateAsync`
+  (which would be a second save). Delete does **not** pull `CurrentMileage` back (high-water mark).
+- Cross-user isolation and **404-not-403** as in vehicles; a non-owned vehicle 404s the whole
+  collection. `MaintenanceRecordResponse` omits `VehicleId` (it's in the URL). List order: `Date` desc.
+
+## Vehicle obligations (Phase 4 ✅)
+
+- The administrative/legal side of ownership — insurance, casco, technical inspection, vignette, tax —
+  modelled as **one entity** [`VehicleObligation`](backend/CarOrganizer.Domain/Entities/VehicleObligation.cs)
+  with an `ObligationType` enum, **not** crammed into `MaintenanceType`. They differ from maintenance
+  by having a validity period (`ValidFrom?`/`ValidUntil`), a cost, a provider and a policy number.
+- Nested routes `/api/vehicles/{vehicleId:guid}/obligations`, same owner-scoped/404 model as records.
+- `ValidUntil` is required and indexed — the dashboard (Phase 6) derives "expiring soon" straight
+  from it, so these need **no separate `Reminder` rows**. `ValidFrom <= ValidUntil` is a cross-field
+  rule (`ObligationValidity.ValidateOrder`) → **400**. List order: `ValidUntil` asc (soonest first).
+- No side effects, so `VehicleObligationService` only needs `IVehicleStore` for the ownership gate
+  (`OwnsVehicleAsync`), not to mutate it. Table added in the `AddVehicleObligations` migration.
+- **Deferred to Phase 5:** attaching the policy/certificate PDF — will add a nullable
+  `VehicleObligationId` to `Document`. Not built yet.
+
+## Enums over the wire
+
+- Enum-typed request/response fields (`MaintenanceType`, `ObligationType`) serialize as **numbers**
+  (System.Text.Json default — no `JsonStringEnumConverter` is registered). DTOs guard against
+  undefined values with `[EnumDataType(typeof(...))]`. Decided deliberately; revisit if a string
+  format is ever wanted (safe to add — no existing endpoint exposed an enum).
 
 ## Common commands
 
@@ -176,6 +222,8 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
     `VehicleEndpointsTests.SignUpAsync` registers + logs in for real. **Anything that writes a row
     referencing a user must sign up for real** — see the InMemory/FK gotcha below.
   - For cross-user rules, drive two clients off one factory (they share the database).
+  - Nested-resource suites (`MaintenanceRecordEndpointsTests`, `VehicleObligationEndpointsTests`)
+    sign up, create a vehicle, then drive its child collection; enum `type` is sent as its **number**.
 
 ## Gotchas learned (don't rediscover these)
 
@@ -201,15 +249,25 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
   indistinguishable aren't byte-equal. Strip `traceId` before comparing (see
   `VehicleEndpointsTests.BodyWithoutTraceIdAsync`), rather than weakening the assertion to the
   status code alone.
+- **Cross-aggregate write in one `SaveChanges`:** a service that mutates two aggregates (e.g.
+  `MaintenanceRecordService` inserting a record *and* bumping the vehicle's `CurrentMileage`) relies on
+  both stores sharing the request-scoped `AppDbContext`. It loads the vehicle (tracked), mutates it in
+  memory, and lets the record store's single `SaveChanges` flush **both** — atomic, no second save.
+  This works because store lookups don't use `AsNoTracking`. Unit tests (mocked stores) can't exercise
+  the atomicity — assert the mutation on the returned vehicle object; leave persistence to integration.
 
 ## Roadmap (phase by phase)
 
 0 setup ✅ · 1 domain + DB ✅ · 2 JWT auth ✅ (register, login, validation, refresh+rotation, logout) ·
-3 vehicles/garage ✅ (CRUD, owner-scoped) · **4 maintenance records (next)** · 5 documents ·
+3 vehicles/garage ✅ (CRUD, owner-scoped) · 4 maintenance records ✅ (CRUD, mileage auto-advance) +
+vehicle obligations ✅ (insurance/casco/inspection/vignette/tax) · **5 documents (next)** ·
 6 dashboard + reminders · 7 React frontend · 8 deploy to Railway · 9 feedback & iteration
 
 Deferred, worth picking up when the phase that needs it arrives:
-- **Search/filtering** (an MVP feature in the PRD): the garage list is unfiltered and unpaged.
-  Natural home is Phase 6, once maintenance records give it something to search across.
-- **Mileage coherence:** `Vehicle.Mileage` and `MaintenanceRecord.Mileage` can currently disagree
-  (a service at 200k km on a car recorded at 190k). Decide the rule in Phase 4.
+- **Search/filtering** (an MVP feature in the PRD): the garage list is unfiltered and unpaged, and
+  so are the record/obligation lists. Natural home is Phase 6.
+- **Mileage coherence** — ✅ resolved in Phase 4: `PurchaseMileage`/`CurrentMileage` split + a
+  maintenance record auto-advances `CurrentMileage` (high-water mark). No lower-bound or date-vs-mileage
+  monotonicity rule yet (a backdated record may sit below an earlier one) — add if it ever bites.
+- **Documents on obligations** (Phase 5): attach the policy/certificate PDF via a nullable
+  `VehicleObligationId` on `Document`.
