@@ -143,9 +143,9 @@ public class DocumentService : IDocumentService
         await _vehicles.FindByIdAsync(vehicleId, ownerId, cancellationToken) is not null;
 
     /// <summary>
-    /// Whether the record or obligation the upload wants to hang off actually belongs to this vehicle.
-    /// An unlinked upload has nothing to prove. The controller has already rejected requests naming
-    /// both, so the first match wins without ambiguity.
+    /// Whether the record or obligation the upload hangs off actually belongs to this vehicle. Every
+    /// document must name exactly one of them — a file we can't say the purpose of is worse than no
+    /// file — so a request naming neither is refused here too, not just by the controller.
     /// </summary>
     private async Task<bool> LinkTargetExistsAsync(Guid vehicleId, UploadDocumentRequest request, CancellationToken cancellationToken)
     {
@@ -159,8 +159,9 @@ public class DocumentService : IDocumentService
             return await _obligations.FindByIdAsync(obligationId, vehicleId, cancellationToken) is not null;
         }
 
-        // No link named, so there is nothing to prove — a document may hang off the vehicle alone.
-        return true;
+        // Nothing named. Unreachable over HTTP (the controller answers that with a 400 that explains
+        // itself), kept as a refusal so no other caller can create paperwork of unknown purpose.
+        return false;
     }
 
     /// <summary>

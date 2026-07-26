@@ -6,8 +6,8 @@ namespace CarOrganizer.Application.Documents;
 /// <remarks>
 /// Deliberately carries a plain <see cref="Stream"/> rather than an <c>IFormFile</c>: the Application
 /// layer takes no ASP.NET dependency, and the service can be exercised with a <c>MemoryStream</c>.
-/// At most one of <see cref="MaintenanceRecordId"/> and <see cref="ObligationId"/> may be set — the
-/// controller rejects the pair before this record is built.
+/// Exactly one of <see cref="MaintenanceRecordId"/> and <see cref="ObligationId"/> must be set — the
+/// controller rejects both-or-neither with a 400 before this record is built.
 /// </remarks>
 public record UploadDocumentRequest(
     Stream Content,

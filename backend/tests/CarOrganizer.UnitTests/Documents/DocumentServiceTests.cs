@@ -15,6 +15,7 @@ public class DocumentServiceTests
 {
     private static readonly Guid OwnerId = Guid.NewGuid();
     private static readonly Guid VehicleId = Guid.NewGuid();
+    private static readonly Guid RecordId = Guid.NewGuid();
     private const string StorageKey = "3f2504e04f8911d39a0c0305e82c3301";
 
     private readonly Mock<IDocumentStore> _documents = new();
@@ -30,6 +31,11 @@ public class DocumentServiceTests
             .Setup(s => s.SaveAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(StorageKey);
 
+        // Every document must hang off a record or an obligation, so the default request links to one.
+        _records
+            .Setup(r => r.FindByIdAsync(RecordId, VehicleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MaintenanceRecord { Id = RecordId, VehicleId = VehicleId });
+
         _sut = new DocumentService(
             _documents.Object, _vehicles.Object, _records.Object, _obligations.Object, _storage.Object);
     }
@@ -44,12 +50,14 @@ public class DocumentServiceTests
             .Setup(v => v.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Vehicle?)null);
 
+    /// <summary>The ordinary case: an upload linked to a maintenance record that is on the vehicle.</summary>
     private static UploadDocumentRequest UploadRequest(
         string fileName = "invoice.pdf",
-        string contentType = "application/pdf",
-        Guid? maintenanceRecordId = null,
-        Guid? obligationId = null) =>
-        new(new MemoryStream([1, 2, 3]), fileName, contentType, 3, maintenanceRecordId, obligationId);
+        string contentType = "application/pdf") =>
+        new(new MemoryStream([1, 2, 3]), fileName, contentType, 3, RecordId, null);
+
+    private static UploadDocumentRequest LinkedRequest(Guid? maintenanceRecordId, Guid? obligationId) =>
+        new(new MemoryStream([1, 2, 3]), "invoice.pdf", "application/pdf", 3, maintenanceRecordId, obligationId);
 
     private static Document StoredDocument(Guid? id = null) =>
         new()
@@ -143,7 +151,7 @@ public class DocumentServiceTests
         Assert.Equal("image/jpeg", captured.ContentType);
         Assert.Equal(StorageKey, captured.StorageKey);
         Assert.Equal(3, captured.SizeBytes);
-        Assert.Null(captured.MaintenanceRecordId);
+        Assert.Equal(RecordId, captured.MaintenanceRecordId);
         Assert.Null(captured.VehicleObligationId);
     }
 
@@ -201,7 +209,7 @@ public class DocumentServiceTests
             .Returns(Task.CompletedTask);
 
         var response = await _sut.UploadAsync(
-            OwnerId, VehicleId, UploadRequest(maintenanceRecordId: recordId), CancellationToken.None);
+            OwnerId, VehicleId, LinkedRequest(recordId, null), CancellationToken.None);
 
         Assert.Equal(recordId, captured!.MaintenanceRecordId);
         Assert.Equal(recordId, response!.MaintenanceRecordId);
@@ -223,7 +231,7 @@ public class DocumentServiceTests
             .Returns(Task.CompletedTask);
 
         var response = await _sut.UploadAsync(
-            OwnerId, VehicleId, UploadRequest(obligationId: obligationId), CancellationToken.None);
+            OwnerId, VehicleId, LinkedRequest(null, obligationId), CancellationToken.None);
 
         Assert.Equal(obligationId, captured!.VehicleObligationId);
         Assert.Equal(obligationId, response!.VehicleObligationId);
@@ -239,7 +247,7 @@ public class DocumentServiceTests
             .ReturnsAsync((MaintenanceRecord?)null);
 
         var response = await _sut.UploadAsync(
-            OwnerId, VehicleId, UploadRequest(maintenanceRecordId: Guid.NewGuid()), CancellationToken.None);
+            OwnerId, VehicleId, LinkedRequest(Guid.NewGuid(), null), CancellationToken.None);
 
         Assert.Null(response);
         // The link is checked first precisely so a rejected upload leaves no orphaned blob behind.
@@ -256,24 +264,42 @@ public class DocumentServiceTests
             .ReturnsAsync((VehicleObligation?)null);
 
         var response = await _sut.UploadAsync(
-            OwnerId, VehicleId, UploadRequest(obligationId: Guid.NewGuid()), CancellationToken.None);
+            OwnerId, VehicleId, LinkedRequest(null, Guid.NewGuid()), CancellationToken.None);
 
         Assert.Null(response);
         _storage.Verify(s => s.SaveAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task UploadAsync_WithoutALink_ChecksNeitherStore()
+    public async Task UploadAsync_WithoutALink_ReturnsNullAndWritesNothing()
     {
         OwnsVehicle();
+
+        var response = await _sut.UploadAsync(
+            OwnerId, VehicleId, LinkedRequest(null, null), CancellationToken.None);
+
+        // A file nobody can say the purpose of is worse than no file: the controller turns this away
+        // as a 400, and the service refuses it too so no other caller can slip one in.
+        Assert.Null(response);
+        _storage.Verify(s => s.SaveAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()), Times.Never);
+        _documents.Verify(d => d.AddAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadAsync_LinkedToAnObligation_DoesNotConsultTheRecordStore()
+    {
+        OwnsVehicle();
+        var obligationId = Guid.NewGuid();
+        _obligations
+            .Setup(o => o.FindByIdAsync(obligationId, VehicleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new VehicleObligation { Id = obligationId, VehicleId = VehicleId });
         _documents
             .Setup(d => d.AddAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        await _sut.UploadAsync(OwnerId, VehicleId, UploadRequest(), CancellationToken.None);
+        await _sut.UploadAsync(OwnerId, VehicleId, LinkedRequest(null, obligationId), CancellationToken.None);
 
         _records.Verify(r => r.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        _obligations.Verify(o => o.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ---------- upload: compensation ----------

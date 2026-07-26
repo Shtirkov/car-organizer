@@ -12,13 +12,14 @@ namespace CarOrganizer.UnitTests.Documents;
 
 /// <summary>
 /// Covers <see cref="DocumentsController"/>: the shape validation an upload has to clear before the
-/// service is consulted (file present, allowed type, size, at most one link), and mapping the
-/// service's outcome to the right HTTP result.
+/// service is consulted (file present, allowed type, size, and <b>exactly one</b> link), and mapping
+/// the service's outcome to the right HTTP result.
 /// </summary>
 public class DocumentsControllerTests
 {
     private static readonly Guid CallerId = Guid.NewGuid();
     private static readonly Guid VehicleId = Guid.NewGuid();
+    private static readonly Guid RecordId = Guid.NewGuid();
 
     private readonly Mock<IDocumentService> _service = new();
     private readonly DocumentsController _sut;
@@ -83,7 +84,7 @@ public class DocumentsControllerTests
     [Fact]
     public async Task Upload_WithNoFile_ReturnsBadRequestAndDoesNotCallTheService()
     {
-        var response = await _sut.Upload(VehicleId, null, null, null, CancellationToken.None);
+        var response = await _sut.Upload(VehicleId, null, RecordId, null, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(response);
         VerifyServiceNotCalled();
@@ -92,7 +93,7 @@ public class DocumentsControllerTests
     [Fact]
     public async Task Upload_WithAnEmptyFile_ReturnsBadRequest()
     {
-        var response = await _sut.Upload(VehicleId, FileOf(length: 0), null, null, CancellationToken.None);
+        var response = await _sut.Upload(VehicleId, FileOf(length: 0), RecordId, null, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(response);
         VerifyServiceNotCalled();
@@ -106,7 +107,7 @@ public class DocumentsControllerTests
     [InlineData("")]
     public async Task Upload_WithAnUnsupportedContentType_ReturnsBadRequest(string contentType)
     {
-        var response = await _sut.Upload(VehicleId, FileOf(contentType), null, null, CancellationToken.None);
+        var response = await _sut.Upload(VehicleId, FileOf(contentType), RecordId, null, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(response);
         VerifyServiceNotCalled();
@@ -122,7 +123,7 @@ public class DocumentsControllerTests
     {
         ServiceStores(SampleResponse());
 
-        var response = await _sut.Upload(VehicleId, FileOf(contentType), null, null, CancellationToken.None);
+        var response = await _sut.Upload(VehicleId, FileOf(contentType), RecordId, null, CancellationToken.None);
 
         Assert.IsType<CreatedAtActionResult>(response);
     }
@@ -137,7 +138,7 @@ public class DocumentsControllerTests
             .ReturnsAsync(SampleResponse());
 
         var response = await _sut.Upload(
-            VehicleId, FileOf("image/jpeg; charset=binary"), null, null, CancellationToken.None);
+            VehicleId, FileOf("image/jpeg; charset=binary"), RecordId, null, CancellationToken.None);
 
         Assert.IsType<CreatedAtActionResult>(response);
         Assert.Equal("image/jpeg", captured!.ContentType);
@@ -147,7 +148,7 @@ public class DocumentsControllerTests
     public async Task Upload_LargerThanTheLimit_ReturnsBadRequest()
     {
         var response = await _sut.Upload(
-            VehicleId, FileOf(length: DocumentLimits.MaxFileSizeBytes + 1), null, null, CancellationToken.None);
+            VehicleId, FileOf(length: DocumentLimits.MaxFileSizeBytes + 1), RecordId, null, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(response);
         VerifyServiceNotCalled();
@@ -159,9 +160,19 @@ public class DocumentsControllerTests
         ServiceStores(SampleResponse());
 
         var response = await _sut.Upload(
-            VehicleId, FileOf(length: DocumentLimits.MaxFileSizeBytes), null, null, CancellationToken.None);
+            VehicleId, FileOf(length: DocumentLimits.MaxFileSizeBytes), RecordId, null, CancellationToken.None);
 
         Assert.IsType<CreatedAtActionResult>(response);
+    }
+
+    [Fact]
+    public async Task Upload_WithNoLinkIds_ReturnsBadRequest()
+    {
+        var response = await _sut.Upload(VehicleId, FileOf(), null, null, CancellationToken.None);
+
+        // A document has to say what it is paperwork for; a vehicle alone isn't enough.
+        Assert.IsType<BadRequestObjectResult>(response);
+        VerifyServiceNotCalled();
     }
 
     [Fact]
@@ -192,7 +203,7 @@ public class DocumentsControllerTests
         var document = SampleResponse();
         ServiceStores(document);
 
-        var response = await _sut.Upload(VehicleId, FileOf(), null, null, CancellationToken.None);
+        var response = await _sut.Upload(VehicleId, FileOf(), RecordId, null, CancellationToken.None);
 
         var created = Assert.IsType<CreatedAtActionResult>(response);
         Assert.Equal(nameof(DocumentsController.Get), created.ActionName);
@@ -229,7 +240,7 @@ public class DocumentsControllerTests
     {
         ServiceStores(null);
 
-        var response = await _sut.Upload(VehicleId, FileOf(), null, null, CancellationToken.None);
+        var response = await _sut.Upload(VehicleId, FileOf(), RecordId, null, CancellationToken.None);
 
         Assert.IsType<NotFoundResult>(response);
     }

@@ -14,9 +14,11 @@ public class MaintenanceRecordConfiguration : IEntityTypeConfiguration<Maintenan
         builder.Property(m => m.Cost).HasPrecision(18, 2);
         builder.Property(m => m.Notes).HasMaxLength(2000);
 
+        // Cascade, not SetNull: a document must always name what it is paperwork for, so detaching it
+        // would leave a file of unknown purpose. Deleting the record deletes its invoices with it.
         builder.HasMany(m => m.Documents)
             .WithOne(d => d.MaintenanceRecord)
             .HasForeignKey(d => d.MaintenanceRecordId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

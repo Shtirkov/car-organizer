@@ -18,11 +18,18 @@ public class VehicleObligationServiceTests
 
     private readonly Mock<IVehicleObligationStore> _obligations = new();
     private readonly Mock<IVehicleStore> _vehicles = new();
+    private readonly Mock<IDocumentStore> _documents = new();
+    private readonly Mock<IFileStorage> _storage = new();
     private readonly VehicleObligationService _sut;
 
     public VehicleObligationServiceTests()
     {
-        _sut = new VehicleObligationService(_obligations.Object, _vehicles.Object);
+        // Deleting sweeps the files of the documents the cascade removes; most tests have none.
+        _documents
+            .Setup(d => d.ListByObligationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _sut = new VehicleObligationService(_obligations.Object, _vehicles.Object, _documents.Object, _storage.Object);
     }
 
     private void OwnsVehicle() =>
@@ -221,5 +228,44 @@ public class VehicleObligationServiceTests
 
         Assert.True(deleted);
         _obligations.Verify(o => o.RemoveAsync(obligation, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AlsoDeletesTheFilesOfTheDocumentsItCascadesAway()
+    {
+        OwnsVehicle();
+        var obligation = new VehicleObligation { Id = Guid.NewGuid(), VehicleId = VehicleId };
+        _obligations
+            .Setup(o => o.FindByIdAsync(obligation.Id, VehicleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(obligation);
+        _obligations
+            .Setup(o => o.RemoveAsync(It.IsAny<VehicleObligation>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _documents
+            .Setup(d => d.ListByObligationAsync(obligation.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new Document { VehicleId = VehicleId, StorageKey = "key-a" },
+                new Document { VehicleId = VehicleId, StorageKey = "key-b" },
+            ]);
+
+        await _sut.DeleteAsync(OwnerId, VehicleId, obligation.Id, CancellationToken.None);
+
+        // The database cascade takes the rows; nothing but this removes the files behind them.
+        _storage.Verify(s => s.DeleteAsync("key-a", It.IsAny<CancellationToken>()), Times.Once);
+        _storage.Verify(s => s.DeleteAsync("key-b", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenObligationMissing_TouchesNoFiles()
+    {
+        OwnsVehicle();
+        _obligations
+            .Setup(o => o.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((VehicleObligation?)null);
+
+        await _sut.DeleteAsync(OwnerId, VehicleId, Guid.NewGuid(), CancellationToken.None);
+
+        _storage.Verify(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

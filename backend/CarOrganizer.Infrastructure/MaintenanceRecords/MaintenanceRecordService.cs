@@ -8,16 +8,25 @@ namespace CarOrganizer.Infrastructure.MaintenanceRecords;
 /// Store-backed implementation of <see cref="IMaintenanceRecordService"/>. Coordinates the record
 /// store with the vehicle store so that (a) every operation is scoped to a vehicle the caller owns,
 /// and (b) logging a service at a higher odometer advances the vehicle's current mileage.
+/// Deleting a record also sweeps the files of the documents the database cascade removes.
 /// </summary>
 public class MaintenanceRecordService : IMaintenanceRecordService
 {
     private readonly IMaintenanceRecordStore _records;
     private readonly IVehicleStore _vehicles;
+    private readonly IDocumentStore _documents;
+    private readonly IFileStorage _storage;
 
-    public MaintenanceRecordService(IMaintenanceRecordStore records, IVehicleStore vehicles)
+    public MaintenanceRecordService(
+        IMaintenanceRecordStore records,
+        IVehicleStore vehicles,
+        IDocumentStore documents,
+        IFileStorage storage)
     {
         _records = records;
         _vehicles = vehicles;
+        _documents = documents;
+        _storage = storage;
     }
 
     public async Task<MaintenanceRecordResponse?> CreateAsync(Guid ownerId, Guid vehicleId, CreateMaintenanceRecordRequest request, CancellationToken cancellationToken = default)
@@ -115,7 +124,16 @@ public class MaintenanceRecordService : IMaintenanceRecordService
             return false;
         }
 
+        // Deleting the record cascades its documents away, but the stored files are ours to remove
+        // and their keys have to be read before the rows disappear.
+        var documents = await _documents.ListByMaintenanceRecordAsync(recordId, cancellationToken);
+
         await _records.RemoveAsync(record, cancellationToken);
+
+        foreach (var document in documents)
+        {
+            await _storage.DeleteAsync(document.StorageKey, cancellationToken);
+        }
 
         // CurrentMileage is a high-water mark: the car really did reach that reading, so deleting the
         // record that set it does not pull it back down. A mistaken reading is corrected with a

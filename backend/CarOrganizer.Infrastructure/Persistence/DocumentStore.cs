@@ -37,6 +37,20 @@ public class DocumentStore : IDocumentStore
             .SingleOrDefaultAsync(d => d.Id == documentId && d.VehicleId == vehicleId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Document>> ListByMaintenanceRecordAsync(Guid maintenanceRecordId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Documents
+            .Where(d => d.MaintenanceRecordId == maintenanceRecordId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Document>> ListByObligationAsync(Guid obligationId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Documents
+            .Where(d => d.VehicleObligationId == obligationId)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task RemoveAsync(Document document, CancellationToken cancellationToken = default)
     {
         _dbContext.Documents.Remove(document);

@@ -195,25 +195,41 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   a plain `MemoryStream`.
 - **Multipart is not a validated record.** `[Required]`-style attributes are for JSON bodies; upload
   shape errors are checked in the controller → **400**: file present and non-empty, content type in
-  `DocumentLimits.AllowedContentTypes`, size ≤ 15 MB, and **not both** link ids. `[RequestSizeLimit]`
+  `DocumentLimits.AllowedContentTypes`, size ≤ 15 MB, and **exactly one** link id. `[RequestSizeLimit]`
   is set to 2× the file cap as a pure server backstop (it yields **413**, not 400) — the explicit
   `file.Length` check owns the user-facing message. Content types are normalised (`image/jpeg; x=y`
   → `image/jpeg`) before matching.
 - **HEIC is deliberately rejected** even though iPhones shoot it: browsers can't render it, so it
   would break the later web client. Expo's `ImagePicker` emits JPEG by default; the 400 names the
   accepted types.
-- A document optionally links to **either** a maintenance record **or** an obligation, never both.
-  The service verifies the target is on *this* vehicle **before writing any bytes** (a bad link →
-  404, no orphaned blob). Added `VehicleObligationId` (nullable, indexed, `SetNull`) in the
-  `AddDocumentObligationLink` migration, mirroring the existing record link.
+- **A document must link to exactly one** maintenance record **or** obligation — never both, and
+  **never neither**. A file whose purpose nobody can name is worse than no file, so "belongs to this
+  vehicle" alone is not enough. Enforced in two places on purpose: the controller rejects
+  both-or-neither with a **400** that names the missing field (it's a malformed request, not a missing
+  resource), and `LinkTargetExistsAsync` also refuses an unlinked request so no non-HTTP caller can
+  slip one past. The named target must be on *this* vehicle, checked **before any bytes are written**
+  (a bad link → 404, no orphaned blob). `VehicleObligationId` (nullable, indexed) came in the
+  `AddDocumentObligationLink` migration, mirroring the record link.
+- **The link FKs are `Cascade`, not `SetNull`** (`CascadeDocumentsWithTheirLink` migration). `SetNull`
+  would null the link and leave paperwork of unknown purpose — the exact state the rule forbids — so
+  deleting a maintenance record or an obligation **deletes its documents with it**. The invariant
+  therefore holds at rest, not only at creation.
+- **The cascade only removes rows, so the three delete paths sweep the files themselves.**
+  `MaintenanceRecordService`, `VehicleObligationService` and `VehicleService` each take
+  `IDocumentStore` + `IFileStorage`, read the storage keys **before** the delete (afterwards the rows
+  are gone), remove the parent, then delete the blobs. `IDocumentStore` grew
+  `ListByMaintenanceRecordAsync`/`ListByObligationAsync` for exactly this. Loading the documents also
+  makes them *tracked*, so EF cascades them in the change tracker — which is what makes the behaviour
+  identical on InMemory (no real FKs) and on Postgres.
 - **Blob/row ordering is deliberate in both directions:** upload writes bytes → row, with a
   compensating `DeleteAsync` on `CancellationToken.None` if the insert throws (a cancelled request is
   exactly when cleanup must still run). Delete removes row → bytes: a leftover blob is invisible and
   reclaimable, whereas the reverse leaves a document that lists fine but 404s on download.
 - File names are sanitised (leaf after `/` and `\`, fallback `"document"`, truncated to 255) — they
   are metadata and a Content-Disposition value only, never a path.
-- **Known limitation:** deleting a *vehicle* cascades its `Document` rows but does **not** delete the
-  stored files. Deferred: sweep blobs in `VehicleService.DeleteAsync`, or a background reaper.
+- **Residual risk:** the row delete and the blob delete are not one transaction. If the process dies
+  between them the file is orphaned — invisible and harmless, but it still occupies space. A periodic
+  sweep (storage keys with no matching row) is the fix if it ever matters.
 
 ## Client direction (decided July 2026)
 
@@ -342,7 +358,7 @@ Deferred, worth picking up when the phase that needs it arrives:
 - **Mileage coherence** — ✅ resolved in Phase 4: `PurchaseMileage`/`CurrentMileage` split + a
   maintenance record auto-advances `CurrentMileage` (high-water mark). No lower-bound or date-vs-mileage
   monotonicity rule yet (a backdated record may sit below an earlier one) — add if it ever bites.
-- **Orphaned blobs** (Phase 5 limitation): deleting a vehicle leaves its files on disk. Sweep them in
-  `VehicleService.DeleteAsync` or with a background reaper.
+- **Orphaned-blob sweeper**: deletes remove the row then the file in two steps, so a crash between
+  them strands a file. A background job matching storage keys against rows would close it.
 - **Presigned uploads** (client → R2 directly, skipping the API): same `IFileStorage` seam, revisit
   in Phase 8 if egress or CPU ever matters.

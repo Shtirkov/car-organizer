@@ -4,8 +4,9 @@ namespace CarOrganizer.Domain.Entities;
 
 /// <summary>
 /// An uploaded file (image/PDF) held by the configured file storage. Always belongs to a vehicle,
-/// and may optionally be attached to either a specific maintenance record (the invoice for a
-/// service) or a specific obligation (the policy or certificate behind it) — never both.
+/// and is attached to <b>exactly one</b> of a maintenance record (the invoice for a service) or an
+/// obligation (the policy or certificate behind it) — never both, and never neither: paperwork whose
+/// purpose nobody can name is worse than no paperwork at all.
 /// </summary>
 public class Document : BaseEntity
 {

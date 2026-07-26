@@ -17,11 +17,11 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.Property(d => d.StorageKey).HasMaxLength(512).IsRequired();
 
         // Mirrors the maintenance-record link (configured from MaintenanceRecordConfiguration):
-        // deleting the obligation detaches its paperwork rather than destroying it. Declared with
-        // WithMany() and no back-collection so VehicleObligation stays unaware of documents.
+        // cascade, because a detached document is paperwork nobody can name the purpose of. Declared
+        // with WithMany() and no back-collection so VehicleObligation stays unaware of documents.
         builder.HasOne(d => d.VehicleObligation)
             .WithMany()
             .HasForeignKey(d => d.VehicleObligationId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

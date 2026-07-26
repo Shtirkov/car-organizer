@@ -13,11 +13,19 @@ public class VehicleObligationService : IVehicleObligationService
 {
     private readonly IVehicleObligationStore _obligations;
     private readonly IVehicleStore _vehicles;
+    private readonly IDocumentStore _documents;
+    private readonly IFileStorage _storage;
 
-    public VehicleObligationService(IVehicleObligationStore obligations, IVehicleStore vehicles)
+    public VehicleObligationService(
+        IVehicleObligationStore obligations,
+        IVehicleStore vehicles,
+        IDocumentStore documents,
+        IFileStorage storage)
     {
         _obligations = obligations;
         _vehicles = vehicles;
+        _documents = documents;
+        _storage = storage;
     }
 
     public async Task<VehicleObligationResponse?> CreateAsync(Guid ownerId, Guid vehicleId, CreateVehicleObligationRequest request, CancellationToken cancellationToken = default)
@@ -107,7 +115,15 @@ public class VehicleObligationService : IVehicleObligationService
             return false;
         }
 
+        // The policy's scan goes with the policy: the cascade takes the rows, we take the files.
+        var documents = await _documents.ListByObligationAsync(obligationId, cancellationToken);
+
         await _obligations.RemoveAsync(obligation, cancellationToken);
+
+        foreach (var document in documents)
+        {
+            await _storage.DeleteAsync(document.StorageKey, cancellationToken);
+        }
 
         return true;
     }

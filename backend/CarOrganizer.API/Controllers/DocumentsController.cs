@@ -61,7 +61,14 @@ public class DocumentsController : ControllerBase
                 $"The file is larger than the {DocumentLimits.MaxFileSizeBytes / (1024 * 1024)} MB limit.");
         }
 
-        if (maintenanceRecordId is not null && obligationId is not null)
+        if (maintenanceRecordId is null && obligationId is null)
+        {
+            ModelState.AddModelError(
+                nameof(maintenanceRecordId),
+                "A document must be attached to a maintenance record or an obligation. "
+                + "Supply exactly one of maintenanceRecordId or obligationId.");
+        }
+        else if (maintenanceRecordId is not null && obligationId is not null)
         {
             ModelState.AddModelError(
                 nameof(obligationId),

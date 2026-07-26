@@ -18,11 +18,18 @@ public class MaintenanceRecordServiceTests
 
     private readonly Mock<IMaintenanceRecordStore> _records = new();
     private readonly Mock<IVehicleStore> _vehicles = new();
+    private readonly Mock<IDocumentStore> _documents = new();
+    private readonly Mock<IFileStorage> _storage = new();
     private readonly MaintenanceRecordService _sut;
 
     public MaintenanceRecordServiceTests()
     {
-        _sut = new MaintenanceRecordService(_records.Object, _vehicles.Object);
+        // Deleting sweeps the files of the documents the cascade removes; most tests have none.
+        _documents
+            .Setup(d => d.ListByMaintenanceRecordAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _sut = new MaintenanceRecordService(_records.Object, _vehicles.Object, _documents.Object, _storage.Object);
     }
 
     private static Vehicle VehicleWithCurrentMileage(int currentMileage) => new()
@@ -186,6 +193,40 @@ public class MaintenanceRecordServiceTests
 
         Assert.True(deleted);
         Assert.Equal(200_000, vehicle.CurrentMileage);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AlsoDeletesTheFilesOfTheDocumentsItCascadesAway()
+    {
+        OwnsVehicle(VehicleWithCurrentMileage(200_000));
+        var record = new MaintenanceRecord { Id = Guid.NewGuid(), VehicleId = VehicleId };
+        _records
+            .Setup(r => r.FindByIdAsync(record.Id, VehicleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(record);
+        _records
+            .Setup(r => r.RemoveAsync(It.IsAny<MaintenanceRecord>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _documents
+            .Setup(d => d.ListByMaintenanceRecordAsync(record.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new Document { VehicleId = VehicleId, StorageKey = "key-a" }]);
+
+        await _sut.DeleteAsync(OwnerId, VehicleId, record.Id, CancellationToken.None);
+
+        // The invoice goes with the service it documents — rows by cascade, files by us.
+        _storage.Verify(s => s.DeleteAsync("key-a", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenRecordMissing_TouchesNoFiles()
+    {
+        OwnsVehicle(VehicleWithCurrentMileage(200_000));
+        _records
+            .Setup(r => r.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MaintenanceRecord?)null);
+
+        await _sut.DeleteAsync(OwnerId, VehicleId, Guid.NewGuid(), CancellationToken.None);
+
+        _storage.Verify(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ---------- read/update/delete happy paths ----------

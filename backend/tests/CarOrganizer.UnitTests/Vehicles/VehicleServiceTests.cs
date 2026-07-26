@@ -15,11 +15,18 @@ public class VehicleServiceTests
     private static readonly Guid OwnerId = Guid.NewGuid();
 
     private readonly Mock<IVehicleStore> _store = new();
+    private readonly Mock<IDocumentStore> _documents = new();
+    private readonly Mock<IFileStorage> _storage = new();
     private readonly VehicleService _sut;
 
     public VehicleServiceTests()
     {
-        _sut = new VehicleService(_store.Object);
+        // Deleting sweeps the files of the documents the cascade removes; most tests have none.
+        _documents
+            .Setup(d => d.ListByVehicleAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _sut = new VehicleService(_store.Object, _documents.Object, _storage.Object);
     }
 
     private static Vehicle SampleVehicle(Guid? ownerId = null) => new()
@@ -319,5 +326,34 @@ public class VehicleServiceTests
 
         Assert.False(deleted);
         _store.Verify(s => s.RemoveAsync(It.IsAny<Vehicle>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AlsoDeletesTheFilesOfTheVehiclesDocuments()
+    {
+        var vehicle = SampleVehicle();
+        _store
+            .Setup(s => s.FindByIdAsync(vehicle.Id, OwnerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(vehicle);
+        _documents
+            .Setup(d => d.ListByVehicleAsync(vehicle.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new Document { VehicleId = vehicle.Id, StorageKey = "key-a" }]);
+
+        await _sut.DeleteAsync(OwnerId, vehicle.Id, CancellationToken.None);
+
+        // Scrapping the car takes its paper trail: rows by cascade, files by us.
+        _storage.Verify(s => s.DeleteAsync("key-a", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenTheVehicleIsNotFound_TouchesNoFiles()
+    {
+        _store
+            .Setup(s => s.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Vehicle?)null);
+
+        await _sut.DeleteAsync(OwnerId, Guid.NewGuid(), CancellationToken.None);
+
+        _storage.Verify(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

@@ -21,5 +21,14 @@ public interface IDocumentStore
     /// <summary>The vehicle's document with this id, or <c>null</c> if there is no such document.</summary>
     Task<Document?> FindByIdAsync(Guid documentId, Guid vehicleId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Every document attached to this maintenance record. Used to collect storage keys before a
+    /// delete cascades the rows away — the files are not the database's to clean up.
+    /// </summary>
+    Task<IReadOnlyList<Document>> ListByMaintenanceRecordAsync(Guid maintenanceRecordId, CancellationToken cancellationToken = default);
+
+    /// <summary>Every document attached to this obligation. Same purpose as the record overload.</summary>
+    Task<IReadOnlyList<Document>> ListByObligationAsync(Guid obligationId, CancellationToken cancellationToken = default);
+
     Task RemoveAsync(Document document, CancellationToken cancellationToken = default);
 }

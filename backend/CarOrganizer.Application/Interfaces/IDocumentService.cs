@@ -17,7 +17,8 @@ public interface IDocumentService
 {
     /// <summary>
     /// The stored document, or <c>null</c> if the vehicle isn't the owner's, or the maintenance record
-    /// / obligation being linked to isn't on that vehicle.
+    /// / obligation being linked to isn't on that vehicle. Every document must name exactly one of the
+    /// two; a request naming neither is refused (and the controller turns that away as a 400 first).
     /// </summary>
     Task<DocumentResponse?> UploadAsync(Guid ownerId, Guid vehicleId, UploadDocumentRequest request, CancellationToken cancellationToken = default);
 

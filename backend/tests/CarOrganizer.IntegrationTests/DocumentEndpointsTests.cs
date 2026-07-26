@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CarOrganizer.Application.Auth;
 using CarOrganizer.Application.Documents;
+using CarOrganizer.Application.Interfaces;
 using CarOrganizer.Application.MaintenanceRecords;
 using CarOrganizer.Application.Obligations;
 using CarOrganizer.Application.Vehicles;
@@ -18,6 +19,8 @@ namespace CarOrganizer.IntegrationTests;
 /// the real <c>LocalFileStorage</c> writing to a per-factory temp directory — so an upload/download
 /// round trip proves the bytes actually survive a trip through storage, not just the metadata row.
 /// Clients register and log in for real (so the vehicle's OwnerId is a genuine user, as the FK demands).
+/// Every upload names exactly one maintenance record or obligation — paperwork of unknown purpose
+/// is refused — so most tests set up a record alongside the vehicle.
 /// </summary>
 public class DocumentEndpointsTests : IDisposable
 {
@@ -81,6 +84,14 @@ public class DocumentEndpointsTests : IDisposable
         return (await response.Content.ReadFromJsonAsync<VehicleObligationResponse>())!;
     }
 
+    /// <summary>A vehicle plus a maintenance record on it — the minimum an upload needs.</summary>
+    private static async Task<(VehicleResponse Vehicle, Guid RecordId)> VehicleWithRecordAsync(HttpClient client)
+    {
+        var vehicle = await CreateVehicleAsync(client);
+        var record = await CreateRecordAsync(client, vehicle.Id);
+        return (vehicle, record.Id);
+    }
+
     private static string DocumentsUrl(Guid vehicleId) => $"/api/vehicles/{vehicleId}/documents";
 
     private static MultipartFormDataContent Upload(
@@ -116,6 +127,15 @@ public class DocumentEndpointsTests : IDisposable
         return (await response.Content.ReadFromJsonAsync<DocumentResponse>())!;
     }
 
+    /// <summary>Signs up, creates a vehicle + record, and uploads one document against that record.</summary>
+    private async Task<(HttpClient Client, VehicleResponse Vehicle, DocumentResponse Document)> UploadedAsync(string email)
+    {
+        var client = await SignUpAsync(email);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
+        var document = await UploadDocumentAsync(client, vehicle.Id, recordId);
+        return (client, vehicle, document);
+    }
+
     // ---------- authentication ----------
 
     [Fact]
@@ -133,7 +153,8 @@ public class DocumentEndpointsTests : IDisposable
     {
         using var client = _factory.CreateClient();
 
-        var response = await client.PostAsync(DocumentsUrl(Guid.NewGuid()), Upload());
+        var response = await client.PostAsync(
+            DocumentsUrl(Guid.NewGuid()), Upload(maintenanceRecordId: Guid.NewGuid()));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -144,9 +165,10 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_WithAValidFile_ReturnsCreated()
     {
         using var client = await SignUpAsync("doc.create@example.com");
-        var vehicle = await CreateVehicleAsync(client);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
-        var response = await client.PostAsync(DocumentsUrl(vehicle.Id), Upload());
+        var response = await client.PostAsync(
+            DocumentsUrl(vehicle.Id), Upload(maintenanceRecordId: recordId));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
@@ -155,9 +177,10 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_PointsLocationAtTheNewDocument()
     {
         using var client = await SignUpAsync("doc.location@example.com");
-        var vehicle = await CreateVehicleAsync(client);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
-        var response = await client.PostAsync(DocumentsUrl(vehicle.Id), Upload());
+        var response = await client.PostAsync(
+            DocumentsUrl(vehicle.Id), Upload(maintenanceRecordId: recordId));
 
         Assert.NotNull(response.Headers.Location);
         var followUp = await client.GetAsync(response.Headers.Location);
@@ -168,9 +191,9 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_PersistsTheMetadataAgainstTheVehicle()
     {
         using var client = await SignUpAsync("doc.persist@example.com");
-        var vehicle = await CreateVehicleAsync(client);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
-        var created = await UploadDocumentAsync(client, vehicle.Id);
+        var created = await UploadDocumentAsync(client, vehicle.Id, recordId);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -187,11 +210,13 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_DoesNotLeakTheVehicleIdOrStorageKey()
     {
         using var client = await SignUpAsync("doc.noleak@example.com");
-        var vehicle = await CreateVehicleAsync(client);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
-        var response = await client.PostAsync(DocumentsUrl(vehicle.Id), Upload());
+        var response = await client.PostAsync(
+            DocumentsUrl(vehicle.Id), Upload(maintenanceRecordId: recordId));
         var body = await response.Content.ReadAsStringAsync();
 
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.DoesNotContain("vehicleId", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("storageKey", body, StringComparison.OrdinalIgnoreCase);
     }
@@ -201,7 +226,8 @@ public class DocumentEndpointsTests : IDisposable
     {
         using var client = await SignUpAsync("doc.novehicle@example.com");
 
-        var response = await client.PostAsync(DocumentsUrl(Guid.NewGuid()), Upload());
+        var response = await client.PostAsync(
+            DocumentsUrl(Guid.NewGuid()), Upload(maintenanceRecordId: Guid.NewGuid()));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -215,10 +241,11 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_WithAnUnsupportedContentType_ReturnsBadRequest(string contentType)
     {
         using var client = await SignUpAsync($"doc.type{contentType.GetHashCode()}@example.com");
-        var vehicle = await CreateVehicleAsync(client);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
         var response = await client.PostAsync(
-            DocumentsUrl(vehicle.Id), Upload(contentType: contentType, fileName: "photo.heic"));
+            DocumentsUrl(vehicle.Id),
+            Upload(contentType: contentType, fileName: "photo.heic", maintenanceRecordId: recordId));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -227,35 +254,50 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_WithAnEmptyFile_ReturnsBadRequest()
     {
         using var client = await SignUpAsync("doc.empty@example.com");
-        var vehicle = await CreateVehicleAsync(client);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
-        var response = await client.PostAsync(DocumentsUrl(vehicle.Id), Upload([]));
+        var response = await client.PostAsync(
+            DocumentsUrl(vehicle.Id), Upload([], maintenanceRecordId: recordId));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Upload_WithNoLink_ReturnsBadRequestNotNotFound()
+    {
+        using var client = await SignUpAsync("doc.nolink@example.com");
+        var vehicle = await CreateVehicleAsync(client);
+
+        var response = await client.PostAsync(DocumentsUrl(vehicle.Id), Upload());
+
+        // A document must say what it is paperwork for. That is a malformed request, not a missing
+        // resource, so the client gets a 400 that explains itself rather than a bare 404.
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("maintenanceRecordId", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
     public async Task Upload_WithBothLinkIds_ReturnsBadRequest()
     {
         using var client = await SignUpAsync("doc.bothlinks@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        var record = await CreateRecordAsync(client, vehicle.Id);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
         var obligation = await CreateObligationAsync(client, vehicle.Id);
 
         var response = await client.PostAsync(
-            DocumentsUrl(vehicle.Id), Upload(maintenanceRecordId: record.Id, obligationId: obligation.Id));
+            DocumentsUrl(vehicle.Id), Upload(maintenanceRecordId: recordId, obligationId: obligation.Id));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task Upload_LeavesNoFileBehindWhenRejected()
+    public async Task Upload_LeavesNothingBehindWhenRejected()
     {
         using var client = await SignUpAsync("doc.noorphan@example.com");
-        var vehicle = await CreateVehicleAsync(client);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
-        await client.PostAsync(DocumentsUrl(vehicle.Id), Upload(contentType: "image/heic"));
+        await client.PostAsync(DocumentsUrl(vehicle.Id), Upload(contentType: "image/heic", maintenanceRecordId: recordId));
         await client.PostAsync(DocumentsUrl(vehicle.Id), Upload(maintenanceRecordId: Guid.NewGuid()));
+        await client.PostAsync(DocumentsUrl(vehicle.Id), Upload());
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -268,18 +310,17 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_LinkedToAMaintenanceRecord_PersistsTheLink()
     {
         using var client = await SignUpAsync("doc.recordlink@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        var record = await CreateRecordAsync(client, vehicle.Id);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
 
-        var created = await UploadDocumentAsync(client, vehicle.Id, maintenanceRecordId: record.Id);
+        var created = await UploadDocumentAsync(client, vehicle.Id, recordId);
 
-        Assert.Equal(record.Id, created.MaintenanceRecordId);
+        Assert.Equal(recordId, created.MaintenanceRecordId);
         Assert.Null(created.VehicleObligationId);
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var document = await db.Documents.SingleAsync();
-        Assert.Equal(record.Id, document.MaintenanceRecordId);
+        Assert.Equal(recordId, document.MaintenanceRecordId);
     }
 
     [Fact]
@@ -316,14 +357,14 @@ public class DocumentEndpointsTests : IDisposable
     public async Task Upload_LinkedToARecordOnAnotherVehicle_ReturnsNotFound()
     {
         using var client = await SignUpAsync("doc.crossvehiclelink@example.com");
-        var first = await CreateVehicleAsync(client);
+        var (first, recordOnFirst) = await VehicleWithRecordAsync(client);
         var second = await CreateVehicleAsync(client);
-        var recordOnFirst = await CreateRecordAsync(client, first.Id);
 
         var response = await client.PostAsync(
-            DocumentsUrl(second.Id), Upload(maintenanceRecordId: recordOnFirst.Id));
+            DocumentsUrl(second.Id), Upload(maintenanceRecordId: recordOnFirst));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.NotEqual(first.Id, second.Id);
     }
 
     // ---------- download ----------
@@ -331,9 +372,8 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Download_ReturnsTheExactBytesThatWereUploaded()
     {
-        using var client = await SignUpAsync("doc.roundtrip@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        var created = await UploadDocumentAsync(client, vehicle.Id);
+        var (client, vehicle, created) = await UploadedAsync("doc.roundtrip@example.com");
+        using var _ = client;
 
         var response = await client.GetAsync($"{DocumentsUrl(vehicle.Id)}/{created.Id}/content");
 
@@ -345,9 +385,8 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Download_NamesTheFileInContentDisposition()
     {
-        using var client = await SignUpAsync("doc.disposition@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        var created = await UploadDocumentAsync(client, vehicle.Id);
+        var (client, vehicle, created) = await UploadedAsync("doc.disposition@example.com");
+        using var _ = client;
 
         var response = await client.GetAsync($"{DocumentsUrl(vehicle.Id)}/{created.Id}/content");
 
@@ -370,9 +409,8 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Get_ReturnsTheDocumentMetadata()
     {
-        using var client = await SignUpAsync("doc.get@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        var created = await UploadDocumentAsync(client, vehicle.Id);
+        var (client, vehicle, created) = await UploadedAsync("doc.get@example.com");
+        using var _ = client;
 
         var response = await client.GetAsync($"{DocumentsUrl(vehicle.Id)}/{created.Id}");
 
@@ -397,9 +435,9 @@ public class DocumentEndpointsTests : IDisposable
     public async Task List_ReturnsTheVehiclesDocuments()
     {
         using var client = await SignUpAsync("doc.list@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        await UploadDocumentAsync(client, vehicle.Id);
-        await UploadDocumentAsync(client, vehicle.Id);
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
+        await UploadDocumentAsync(client, vehicle.Id, recordId);
+        await UploadDocumentAsync(client, vehicle.Id, recordId);
 
         var documents = await client.GetFromJsonAsync<List<DocumentResponse>>(DocumentsUrl(vehicle.Id));
 
@@ -410,9 +448,9 @@ public class DocumentEndpointsTests : IDisposable
     public async Task List_DoesNotIncludeAnotherVehiclesDocuments()
     {
         using var client = await SignUpAsync("doc.perVehicle@example.com");
-        var first = await CreateVehicleAsync(client);
+        var (first, recordId) = await VehicleWithRecordAsync(client);
         var second = await CreateVehicleAsync(client);
-        await UploadDocumentAsync(client, first.Id);
+        await UploadDocumentAsync(client, first.Id, recordId);
 
         var documents = await client.GetFromJsonAsync<List<DocumentResponse>>(DocumentsUrl(second.Id));
 
@@ -434,9 +472,8 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Delete_ReturnsNoContentAndTheDocumentIsGone()
     {
-        using var client = await SignUpAsync("doc.delete@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        var created = await UploadDocumentAsync(client, vehicle.Id);
+        var (client, vehicle, created) = await UploadedAsync("doc.delete@example.com");
+        using var _ = client;
 
         var response = await client.DeleteAsync($"{DocumentsUrl(vehicle.Id)}/{created.Id}");
 
@@ -448,9 +485,8 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Delete_AlsoRemovesTheStoredBytes()
     {
-        using var client = await SignUpAsync("doc.deletebytes@example.com");
-        var vehicle = await CreateVehicleAsync(client);
-        var created = await UploadDocumentAsync(client, vehicle.Id);
+        var (client, vehicle, created) = await UploadedAsync("doc.deletebytes@example.com");
+        using var _ = client;
 
         await client.DeleteAsync($"{DocumentsUrl(vehicle.Id)}/{created.Id}");
 
@@ -473,6 +509,81 @@ public class DocumentEndpointsTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    // ---------- cascade from the thing the document documents ----------
+
+    [Fact]
+    public async Task DeletingTheMaintenanceRecord_TakesItsDocumentsWithIt()
+    {
+        using var client = await SignUpAsync("doc.cascade.record@example.com");
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
+        var document = await UploadDocumentAsync(client, vehicle.Id, recordId);
+
+        var deleted = await client.DeleteAsync($"/api/vehicles/{vehicle.Id}/maintenance-records/{recordId}");
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        // A document may never be paperwork of unknown purpose, so it goes with what it documented
+        // rather than being detached.
+        var followUp = await client.GetAsync($"{DocumentsUrl(vehicle.Id)}/{document.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, followUp.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Empty(await db.Documents.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DeletingTheObligation_TakesItsDocumentsWithIt()
+    {
+        using var client = await SignUpAsync("doc.cascade.obligation@example.com");
+        var vehicle = await CreateVehicleAsync(client);
+        var obligation = await CreateObligationAsync(client, vehicle.Id);
+        var document = await UploadDocumentAsync(client, vehicle.Id, obligationId: obligation.Id);
+
+        var deleted = await client.DeleteAsync($"/api/vehicles/{vehicle.Id}/obligations/{obligation.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        var followUp = await client.GetAsync($"{DocumentsUrl(vehicle.Id)}/{document.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, followUp.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeletingTheVehicle_TakesItsDocumentsWithIt()
+    {
+        using var client = await SignUpAsync("doc.cascade.vehicle@example.com");
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
+        await UploadDocumentAsync(client, vehicle.Id, recordId);
+
+        var deleted = await client.DeleteAsync($"/api/vehicles/{vehicle.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Empty(await db.Documents.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DeletingTheMaintenanceRecord_AlsoRemovesTheStoredFile()
+    {
+        using var client = await SignUpAsync("doc.cascade.bytes@example.com");
+        var (vehicle, recordId) = await VehicleWithRecordAsync(client);
+        var document = await UploadDocumentAsync(client, vehicle.Id, recordId);
+
+        string storageKey;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            storageKey = (await db.Documents.SingleAsync(d => d.Id == document.Id)).StorageKey;
+        }
+
+        await client.DeleteAsync($"/api/vehicles/{vehicle.Id}/maintenance-records/{recordId}");
+
+        // The database cascade only removes rows — the file has to be swept by us, or it is orphaned
+        // on disk (and, after Phase 8, billed for in the bucket) forever.
+        using var readBack = _factory.Services.CreateScope();
+        var storage = readBack.ServiceProvider.GetRequiredService<IFileStorage>();
+        Assert.Null(await storage.OpenReadAsync(storageKey, CancellationToken.None));
+    }
+
     // ---------- isolation between users ----------
 
     [Fact]
@@ -480,9 +591,10 @@ public class DocumentEndpointsTests : IDisposable
     {
         using var alice = await SignUpAsync("doc.alice.upload@example.com");
         using var bob = await SignUpAsync("doc.bob.upload@example.com");
-        var aliceVehicle = await CreateVehicleAsync(alice);
+        var (aliceVehicle, aliceRecordId) = await VehicleWithRecordAsync(alice);
 
-        var response = await bob.PostAsync(DocumentsUrl(aliceVehicle.Id), Upload());
+        var response = await bob.PostAsync(
+            DocumentsUrl(aliceVehicle.Id), Upload(maintenanceRecordId: aliceRecordId));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -490,10 +602,9 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Get_AnotherUsersDocument_ReturnsNotFound()
     {
-        using var alice = await SignUpAsync("doc.alice.get@example.com");
+        var (alice, aliceVehicle, aliceDocument) = await UploadedAsync("doc.alice.get@example.com");
+        using var _ = alice;
         using var bob = await SignUpAsync("doc.bob.get@example.com");
-        var aliceVehicle = await CreateVehicleAsync(alice);
-        var aliceDocument = await UploadDocumentAsync(alice, aliceVehicle.Id);
 
         var response = await bob.GetAsync($"{DocumentsUrl(aliceVehicle.Id)}/{aliceDocument.Id}");
 
@@ -503,10 +614,9 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Download_AnotherUsersDocument_ReturnsNotFound()
     {
-        using var alice = await SignUpAsync("doc.alice.download@example.com");
+        var (alice, aliceVehicle, aliceDocument) = await UploadedAsync("doc.alice.download@example.com");
+        using var _ = alice;
         using var bob = await SignUpAsync("doc.bob.download@example.com");
-        var aliceVehicle = await CreateVehicleAsync(alice);
-        var aliceDocument = await UploadDocumentAsync(alice, aliceVehicle.Id);
 
         var response = await bob.GetAsync($"{DocumentsUrl(aliceVehicle.Id)}/{aliceDocument.Id}/content");
 
@@ -516,10 +626,9 @@ public class DocumentEndpointsTests : IDisposable
     [Fact]
     public async Task Delete_AnotherUsersDocument_ReturnsNotFoundAndLeavesItAlone()
     {
-        using var alice = await SignUpAsync("doc.alice.delete@example.com");
+        var (alice, aliceVehicle, aliceDocument) = await UploadedAsync("doc.alice.delete@example.com");
+        using var _ = alice;
         using var bob = await SignUpAsync("doc.bob.delete@example.com");
-        var aliceVehicle = await CreateVehicleAsync(alice);
-        var aliceDocument = await UploadDocumentAsync(alice, aliceVehicle.Id);
 
         var response = await bob.DeleteAsync($"{DocumentsUrl(aliceVehicle.Id)}/{aliceDocument.Id}");
 

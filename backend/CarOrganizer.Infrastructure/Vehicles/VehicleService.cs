@@ -12,10 +12,14 @@ namespace CarOrganizer.Infrastructure.Vehicles;
 public class VehicleService : IVehicleService
 {
     private readonly IVehicleStore _vehicleStore;
+    private readonly IDocumentStore _documents;
+    private readonly IFileStorage _storage;
 
-    public VehicleService(IVehicleStore vehicleStore)
+    public VehicleService(IVehicleStore vehicleStore, IDocumentStore documents, IFileStorage storage)
     {
         _vehicleStore = vehicleStore;
+        _documents = documents;
+        _storage = storage;
     }
 
     public async Task<VehicleResponse> CreateAsync(Guid ownerId, CreateVehicleRequest request, CancellationToken cancellationToken = default)
@@ -88,7 +92,15 @@ public class VehicleService : IVehicleService
             return false;
         }
 
+        // Scrapping the car takes its whole paper trail with it — rows by cascade, files by us.
+        var documents = await _documents.ListByVehicleAsync(vehicleId, cancellationToken);
+
         await _vehicleStore.RemoveAsync(vehicle, cancellationToken);
+
+        foreach (var document in documents)
+        {
+            await _storage.DeleteAsync(document.StorageKey, cancellationToken);
+        }
 
         return true;
     }
