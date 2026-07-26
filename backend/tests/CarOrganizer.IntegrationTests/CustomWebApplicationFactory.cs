@@ -19,6 +19,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     public const string JwtKey = "integration-test-signing-key-at-least-32-bytes-long-0123456789";
 
     private readonly string _databaseName = "CarOrganizerTests-" + Guid.NewGuid();
+    private readonly string _storageRoot = Path.Combine(Path.GetTempPath(), "CarOrganizerTests-" + Guid.NewGuid());
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -30,6 +31,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:Audience", JwtAudience);
         builder.UseSetting("Jwt:Key", JwtKey);
         builder.UseSetting("Jwt:AccessTokenMinutes", "15");
+
+        // The real LocalFileStorage runs, just pointed at a throwaway directory — uploads are then
+        // exercised end to end (bytes actually hit a disk) without leaking into the repository.
+        builder.UseSetting("Storage:LocalRoot", _storageRoot);
 
         builder.ConfigureTestServices(services =>
         {
@@ -50,5 +55,17 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(_databaseName));
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        // The in-memory database goes away with the factory; the uploaded files don't, so they are
+        // swept here rather than accumulating in the temp directory across runs.
+        if (disposing && Directory.Exists(_storageRoot))
+        {
+            Directory.Delete(_storageRoot, recursive: true);
+        }
     }
 }

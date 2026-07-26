@@ -2,10 +2,12 @@ using System.Text;
 using CarOrganizer.Application.Interfaces;
 using CarOrganizer.Domain.Entities;
 using CarOrganizer.Infrastructure.Authentication;
+using CarOrganizer.Infrastructure.Documents;
 using CarOrganizer.Infrastructure.Identity;
 using CarOrganizer.Infrastructure.MaintenanceRecords;
 using CarOrganizer.Infrastructure.Obligations;
 using CarOrganizer.Infrastructure.Persistence;
+using CarOrganizer.Infrastructure.Storage;
 using CarOrganizer.Infrastructure.Vehicles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +60,11 @@ public static class DependencyInjection
 
         services.AddScoped<IVehicleObligationStore, VehicleObligationStore>();
         services.AddScoped<IVehicleObligationService, VehicleObligationService>();
+
+        services.Configure<FileStorageSettings>(configuration.GetSection(FileStorageSettings.SectionName));
+        services.AddSingleton<IFileStorage, LocalFileStorage>();
+        services.AddScoped<IDocumentStore, DocumentStore>();
+        services.AddScoped<IDocumentService, DocumentService>();
 
         services.AddJwtAuthentication(configuration);
 

@@ -31,8 +31,8 @@ and `Expense` entities in the PRD's domain model are deliberately **not** built 
 | Backend      | ASP.NET Core **10** Web API, clean architecture               |
 | Database     | PostgreSQL + EF Core 10 (`Npgsql.EntityFrameworkCore.PostgreSQL`) |
 | Auth         | Own JWT via ASP.NET **Identity** (access + refresh tokens)    |
-| File storage | Cloudflare R2 (S3-compatible), planned                        |
-| Frontend     | React 19 (Vite + TypeScript) — **scaffolded only**, still the stock starter (Phase 7) |
+| File storage | Local disk behind `IFileStorage`; Cloudflare R2 (S3-compatible) at deploy (Phase 8) |
+| Frontend     | Expo / React Native (TypeScript) — **not started**; web later via RN Web (Phase 7) |
 | Deployment   | Docker + GitHub Actions → Railway                             |
 | Tests        | xUnit, Moq, `Microsoft.AspNetCore.Mvc.Testing`, EF InMemory   |
 | API docs     | Swagger UI via `Swashbuckle.AspNetCore` (Dev only, `/swagger`) |
@@ -173,8 +173,69 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   rule (`ObligationValidity.ValidateOrder`) → **400**. List order: `ValidUntil` asc (soonest first).
 - No side effects, so `VehicleObligationService` only needs `IVehicleStore` for the ownership gate
   (`OwnsVehicleAsync`), not to mutate it. Table added in the `AddVehicleObligations` migration.
-- **Deferred to Phase 5:** attaching the policy/certificate PDF — will add a nullable
-  `VehicleObligationId` to `Document`. Not built yet.
+- Attaching the policy/certificate PDF landed in Phase 5 — see below.
+
+## Documents (Phase 5 ✅)
+
+- Nested under the vehicle, `[Authorize]`, owner from the token:
+  `POST|GET /api/vehicles/{vehicleId:guid}/documents` · `GET|DELETE .../{id:guid}` ·
+  `GET .../{id:guid}/content` (the bytes)
+  ([API/Controllers/DocumentsController.cs](backend/CarOrganizer.API/Controllers/DocumentsController.cs)).
+  **Documents are immutable — there is no PUT**; replacing a file is another upload. List order:
+  `CreatedAtUtc` desc. Same feature shape and 404-not-403 model as records/obligations.
+- **`IFileStorage`** ([Application/Interfaces/IFileStorage.cs](backend/CarOrganizer.Application/Interfaces/IFileStorage.cs))
+  is the seam: `SaveAsync(Stream) → storageKey`, `OpenReadAsync(key) → Stream?`, idempotent `DeleteAsync`.
+  **The storage owns its key scheme** — `SaveAsync` hands back the key it chose rather than accepting
+  one, so no caller string ever reaches a file path. `LocalFileStorage` (a directory, key =
+  `Guid.NewGuid("N")`) runs now; R2 slots in behind the same interface in Phase 8. Transfer is
+  **proxied through the API**, not presigned. Root from `Storage:LocalRoot`; `App_Data/` is gitignored.
+- **`IFormFile` never enters Application.** The controller unpacks it into
+  `UploadDocumentRequest(Stream, FileName, ContentType, SizeBytes, MaintenanceRecordId, ObligationId)`,
+  so the layer rule holds, the Application csproj needs no `FrameworkReference`, and service tests use
+  a plain `MemoryStream`.
+- **Multipart is not a validated record.** `[Required]`-style attributes are for JSON bodies; upload
+  shape errors are checked in the controller → **400**: file present and non-empty, content type in
+  `DocumentLimits.AllowedContentTypes`, size ≤ 15 MB, and **not both** link ids. `[RequestSizeLimit]`
+  is set to 2× the file cap as a pure server backstop (it yields **413**, not 400) — the explicit
+  `file.Length` check owns the user-facing message. Content types are normalised (`image/jpeg; x=y`
+  → `image/jpeg`) before matching.
+- **HEIC is deliberately rejected** even though iPhones shoot it: browsers can't render it, so it
+  would break the later web client. Expo's `ImagePicker` emits JPEG by default; the 400 names the
+  accepted types.
+- A document optionally links to **either** a maintenance record **or** an obligation, never both.
+  The service verifies the target is on *this* vehicle **before writing any bytes** (a bad link →
+  404, no orphaned blob). Added `VehicleObligationId` (nullable, indexed, `SetNull`) in the
+  `AddDocumentObligationLink` migration, mirroring the existing record link.
+- **Blob/row ordering is deliberate in both directions:** upload writes bytes → row, with a
+  compensating `DeleteAsync` on `CancellationToken.None` if the insert throws (a cancelled request is
+  exactly when cleanup must still run). Delete removes row → bytes: a leftover blob is invisible and
+  reclaimable, whereas the reverse leaves a document that lists fine but 404s on download.
+- File names are sanitised (leaf after `/` and `\`, fallback `"document"`, truncated to 255) — they
+  are metadata and a Content-Disposition value only, never a path.
+- **Known limitation:** deleting a *vehicle* cascades its `Document` rows but does **not** delete the
+  stored files. Deferred: sweep blobs in `VehicleService.DeleteAsync`, or a background reaper.
+
+## Client direction (decided July 2026)
+
+**Mobile-first: Expo / React Native (TypeScript)**, with the web version later via React Native Web.
+The React 19 + Vite scaffold is **superseded** — don't build on it. Deployment stays **Railway**
+(Docker + GitHub Actions); Hetzner VPS + Coolify is the documented fallback if the bill creeps.
+
+Going mobile-first is mostly free on the backend, but not entirely. Consequences already banked or
+still owed:
+
+- **Phase 5 (done):** the HEIC decision and the 15 MB cap both come from phone cameras.
+- **Phase 6 — push notifications.** Renewal reminders are the product's core value; on mobile that
+  means FCM/APNs, i.e. a device-token table and a background sender. Design Phase 6 for push, not
+  just an in-app list. Biggest single consequence of the pivot.
+- **Phase 7 — session length.** 15-min access + 7-day refresh forces a monthly re-login on a phone.
+  Raise `Jwt:RefreshTokenDays` to ~60 when the app work starts; rotation already handles it.
+- **Phase 7 — API compatibility.** Store apps can't be force-updated, so old clients keep calling for
+  years: version the API before the first release, and treat the numeric enum wire format as
+  **append-only** (reordering or removing a value silently breaks installed apps).
+- **CORS** isn't needed for native; add it when the RN Web build arrives.
+- **Store costs, for planning:** Apple $99/yr, Google Play $25 one-time, plus Google's
+  12-tester / 14-day closed-test requirement for new personal accounts.
 
 ## Enums over the wire
 
@@ -224,6 +285,10 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
   - For cross-user rules, drive two clients off one factory (they share the database).
   - Nested-resource suites (`MaintenanceRecordEndpointsTests`, `VehicleObligationEndpointsTests`)
     sign up, create a vehicle, then drive its child collection; enum `type` is sent as its **number**.
+  - **Uploads run against the real `LocalFileStorage`**, not a mock: the factory points
+    `Storage:LocalRoot` at a per-factory temp directory and deletes it in `Dispose(bool)`. So
+    `DocumentEndpointsTests` can assert a genuine round trip — the downloaded bytes must equal the
+    uploaded ones. Multipart is built with `MultipartFormDataContent` + `ByteArrayContent`.
 
 ## Gotchas learned (don't rediscover these)
 
@@ -245,6 +310,12 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
   `OwnerId` points at nobody, and it would only blow up on real Postgres. So integration tests that
   persist owned rows register a real user instead of forging a token with a random `sub`. Keep this
   in mind for every future FK — the test suite will *not* catch a violation for you.
+- **A migration that exists is not a migration that ran.** `dotnet ef migrations add` only writes the
+  file; without `dotnet ef database update` the local Postgres keeps the old schema and every query
+  touching the new column fails with `42703 column ... does not exist` → **500**. The test suite will
+  **not** warn you: EF InMemory builds its schema from the model, so integration tests stay green
+  against a database that is actually behind. This bit us on `AddDocumentObligationLink`. After adding
+  a migration, run `database update` and (cheaply) `\d "<Table>"` to confirm.
 - **ProblemDetails bodies carry a fresh `traceId` per request**, so two responses that should be
   indistinguishable aren't byte-equal. Strip `traceId` before comparing (see
   `VehicleEndpointsTests.BodyWithoutTraceIdAsync`), rather than weakening the assertion to the
@@ -260,14 +331,18 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
 
 0 setup ✅ · 1 domain + DB ✅ · 2 JWT auth ✅ (register, login, validation, refresh+rotation, logout) ·
 3 vehicles/garage ✅ (CRUD, owner-scoped) · 4 maintenance records ✅ (CRUD, mileage auto-advance) +
-vehicle obligations ✅ (insurance/casco/inspection/vignette/tax) · **5 documents (next)** ·
-6 dashboard + reminders · 7 React frontend · 8 deploy to Railway · 9 feedback & iteration
+vehicle obligations ✅ (insurance/casco/inspection/vignette/tax) · 5 documents ✅ (upload/download/
+delete, local disk behind `IFileStorage`, optional record/obligation link) ·
+**6 dashboard + reminders + push (next)** · 7 Expo / React Native app · 8 deploy to Railway (+ R2) ·
+9 feedback & iteration
 
 Deferred, worth picking up when the phase that needs it arrives:
 - **Search/filtering** (an MVP feature in the PRD): the garage list is unfiltered and unpaged, and
-  so are the record/obligation lists. Natural home is Phase 6.
+  so are the record/obligation/document lists. Natural home is Phase 6.
 - **Mileage coherence** — ✅ resolved in Phase 4: `PurchaseMileage`/`CurrentMileage` split + a
   maintenance record auto-advances `CurrentMileage` (high-water mark). No lower-bound or date-vs-mileage
   monotonicity rule yet (a backdated record may sit below an earlier one) — add if it ever bites.
-- **Documents on obligations** (Phase 5): attach the policy/certificate PDF via a nullable
-  `VehicleObligationId` on `Document`.
+- **Orphaned blobs** (Phase 5 limitation): deleting a vehicle leaves its files on disk. Sweep them in
+  `VehicleService.DeleteAsync` or with a background reaper.
+- **Presigned uploads** (client → R2 directly, skipping the API): same `IFileStorage` seam, revisit
+  in Phase 8 if egress or CPU ever matters.
