@@ -68,9 +68,10 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
 - Public types get concise `<summary>` XML doc comments (match existing style).
 - Register Infrastructure services in `Infrastructure/DependencyInjection.cs` (`AddInfrastructure`).
 - **Service implementations live in Infrastructure**, one folder per feature (`Identity/`, `Vehicles/`),
-  even when — like `VehicleService` — they have no infrastructure dependency of their own. Application
-  stays contracts-only, so there is no `AddApplication` to maintain.
-- **Feature shape** (established by vehicles, follow it for records/documents/reminders):
+  even when a service has no infrastructure dependency of its own. Application stays contracts-only,
+  so there is no `AddApplication` to maintain.
+- **Feature shape** (established by vehicles, followed by records/obligations/documents — use it for
+  reminders too):
   `I<Feature>Store` (EF-backed, in `Infrastructure/Persistence/`) ← `I<Feature>Service`
   (mapping + rules, in `Infrastructure/<Feature>/`) ← controller (HTTP only).
 - **`Result` vs plain values:** `Result` exists to carry *real* failures (Identity's error lists).
@@ -142,6 +143,10 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   is a cross-field rule in `VehicleMileage.ValidateOrder`, wired via `IValidatableObject` on both
   request records → **400** (keeps `VehicleService` failure-free). `SplitVehicleMileage` migration
   renamed the old `Mileage` column and seeded `CurrentMileage` from it.
+- **Deleting a vehicle takes its whole paper trail** (since Phase 5): records, obligations and
+  document rows go by DB cascade, and `VehicleService` deletes the stored files itself — the reason
+  it now takes `IDocumentStore`/`IFileStorage` despite otherwise having no infrastructure of its own
+  (so the "no dependency of their own" remark under Conventions no longer applies to it).
 
 ## Maintenance records (Phase 4 ✅)
 
@@ -160,6 +165,8 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   (which would be a second save). Delete does **not** pull `CurrentMileage` back (high-water mark).
 - Cross-user isolation and **404-not-403** as in vehicles; a non-owned vehicle 404s the whole
   collection. `MaintenanceRecordResponse` omits `VehicleId` (it's in the URL). List order: `Date` desc.
+- **Since Phase 5, deleting a record also deletes its documents** (rows by DB cascade, files by the
+  service) — hence the extra `IDocumentStore`/`IFileStorage` dependencies. See Documents below.
 
 ## Vehicle obligations (Phase 4 ✅)
 
@@ -171,9 +178,11 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
 - `ValidUntil` is required and indexed — the dashboard (Phase 6) derives "expiring soon" straight
   from it, so these need **no separate `Reminder` rows**. `ValidFrom <= ValidUntil` is a cross-field
   rule (`ObligationValidity.ValidateOrder`) → **400**. List order: `ValidUntil` asc (soonest first).
-- No side effects, so `VehicleObligationService` only needs `IVehicleStore` for the ownership gate
-  (`OwnsVehicleAsync`), not to mutate it. Table added in the `AddVehicleObligations` migration.
-- Attaching the policy/certificate PDF landed in Phase 5 — see below.
+- `VehicleObligationService` needs `IVehicleStore` only for the ownership gate (`OwnsVehicleAsync`),
+  never to mutate it. Table added in the `AddVehicleObligations` migration.
+- Attaching the policy/certificate PDF landed in Phase 5 — see below. **Deleting an obligation now
+  deletes its documents too** (rows by DB cascade, files by the service), which is why it also takes
+  `IDocumentStore`/`IFileStorage`.
 
 ## Documents (Phase 5 ✅)
 
@@ -230,6 +239,10 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
 - **Residual risk:** the row delete and the blob delete are not one transaction. If the process dies
   between them the file is orphaned — invisible and harmless, but it still occupies space. A periodic
   sweep (storage keys with no matching row) is the fix if it ever matters.
+- ⚠️ **`LocalFileStorage` is a development-only story.** A container's filesystem is ephemeral, so
+  uploads vanish on redeploy unless a volume is mounted, and they are invisible to a second instance.
+  **Do not ship Phase 8 on it** — swapping in R2 behind `IFileStorage` is part of that phase, not an
+  optimisation to defer.
 
 ## Client direction (decided July 2026)
 
@@ -348,7 +361,7 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
 0 setup ✅ · 1 domain + DB ✅ · 2 JWT auth ✅ (register, login, validation, refresh+rotation, logout) ·
 3 vehicles/garage ✅ (CRUD, owner-scoped) · 4 maintenance records ✅ (CRUD, mileage auto-advance) +
 vehicle obligations ✅ (insurance/casco/inspection/vignette/tax) · 5 documents ✅ (upload/download/
-delete, local disk behind `IFileStorage`, optional record/obligation link) ·
+delete, local disk behind `IFileStorage`, mandatory record-or-obligation link, cascade + file sweep) ·
 **6 dashboard + reminders + push (next)** · 7 Expo / React Native app · 8 deploy to Railway (+ R2) ·
 9 feedback & iteration
 
