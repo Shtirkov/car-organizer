@@ -175,9 +175,10 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   with an `ObligationType` enum, **not** crammed into `MaintenanceType`. They differ from maintenance
   by having a validity period (`ValidFrom?`/`ValidUntil`), a cost, a provider and a policy number.
 - Nested routes `/api/vehicles/{vehicleId:guid}/obligations`, same owner-scoped/404 model as records.
-- `ValidUntil` is required and indexed — the dashboard (Phase 6) derives "expiring soon" straight
-  from it, so these need **no separate `Reminder` rows**. `ValidFrom <= ValidUntil` is a cross-field
-  rule (`ObligationValidity.ValidateOrder`) → **400**. List order: `ValidUntil` asc (soonest first).
+- `ValidUntil` is required and indexed — the dashboard derives "expiring soon" straight from it, so
+  these need **no separate `Reminder` rows** (realised in Phase 6; see Dashboard below).
+  `ValidFrom <= ValidUntil` is a cross-field rule (`ObligationValidity.ValidateOrder`) → **400**.
+  List order: `ValidUntil` asc (soonest first).
 - `VehicleObligationService` needs `IVehicleStore` only for the ownership gate (`OwnsVehicleAsync`),
   never to mutate it. Table added in the `AddVehicleObligations` migration.
 - Attaching the policy/certificate PDF landed in Phase 5 — see below. **Deleting an obligation now
@@ -244,6 +245,62 @@ ASP.NET Identity / EF types — surface results through `Application/Common/Resu
   **Do not ship Phase 8 on it** — swapping in R2 behind `IFileStorage` is part of that phase, not an
   optimisation to defer.
 
+## Dashboard (Phase 6, first half ✅)
+
+- **One endpoint, one screen:** `GET /api/dashboard?withinDays=30&recentCount=5`, `[Authorize]`, owner
+  from the token ([API/Controllers/DashboardController.cs](backend/CarOrganizer.API/Controllers/DashboardController.cs)).
+  A mobile client gets its whole home screen in one round trip.
+- **Never 404.** An owner with no vehicles gets an empty garage, so `IDashboardService.GetAsync`
+  returns a non-nullable response. There is no `vehicleId` in the route: a vehicle that isn't the
+  caller's is simply absent.
+- **Grouped by vehicle, not flattened across the garage** (decided with the user, Aug 2026). The client
+  shows one selected car at a time, and switching between them must not need another request. Grouping
+  is also why the rows carry no denormalised `vehicleMake`/`vehicleModel` — the block header has them.
+- **Two buckets per vehicle, and the order is the point:** `OverdueObligations` (already past
+  `ValidUntil`, longest-overdue first) sits above `ExpiringObligations` (due within the horizon,
+  soonest first). Separate records rather than one type with a signed day count — each carries only
+  the number that applies (`DaysOverdue` / `DaysRemaining`), and they render as different things.
+  Something expiring **today** counts as expiring (`DaysRemaining = 0`), not overdue — you can still
+  renew it.
+- **Overdue is unbounded, expiring is not.** The horizon bounds the future only; a renewal that lapsed
+  two years ago is still a problem and still shows.
+- **No new entity, no new store, no migration.** The dashboard is a read model over what already
+  exists. Two lookups were added to existing stores:
+  - `IVehicleObligationStore.ListByOwnerDueByAsync(ownerId, dueBy)` — the store's **only** owner-scoped
+    lookup, joining through `Vehicle.OwnerId` because the dashboard spans the garage rather than
+    sitting under one vehicle. Both buckets are slices of this one result. `ValidUntil` was already
+    indexed for exactly this.
+  - `IMaintenanceRecordStore.ListRecentByVehicleAsync(vehicleId, count)` — `Take` in the database, so a
+    dashboard never drags years of history across the wire.
+- **`recentCount` is per vehicle**, not shared across the garage — consistent with a grouped screen.
+- **Query cost is 2 + N** (vehicles, obligations, then one small indexed `Take` per vehicle). Accepted
+  deliberately: a personal garage is 1–3 cars, and the alternative — loading every record for the
+  owner to slice in memory — is worse as history grows.
+- **"Today" is the server's UTC date.** For a UTC+2/+3 user this can differ from their local date for a
+  couple of hours around midnight; immaterial for renewals measured in weeks. Fix by taking the
+  client's date if a day-level off-by-one ever becomes visible.
+- **Bounds** are consts in [Application/Dashboard/DashboardLimits.cs](backend/CarOrganizer.Application/Dashboard/DashboardLimits.cs)
+  (`withinDays` 1–365 default 30, `recentCount` 1–50 default 5), applied as `[Range]` on the action
+  parameters — `[ApiController]`'s automatic model validation turns anything outside into a **400**
+  before the service runs, so no explicit `ValidationProblem` call is needed. The response echoes
+  `WithinDays` so the client needn't assume the default.
+- **Deliberately not here:** cost/spend totals (PRD puts expense analytics after MVP), service
+  intervals, and search/filtering.
+
+## Reminders and push (Phase 6, second half — deferred by decision)
+
+**Not started, and not to be started casually.** The user's call (Aug 2026): renewal notifications are
+the product's core value, so they get their own design pass rather than being bolted onto the
+dashboard.
+
+- The `Reminders` **table and `Reminder` entity exist from Phase 1 but are wired to nothing** —
+  no store, no service, no controller. `Vehicle.Reminders` is a dead navigation property.
+- `Reminder` carries `DueDate` **and `DueMileage`**, which obligations do not. That is the real gap:
+  today nothing in the system can answer *"when is the next oil change due?"* — obligations cover only
+  the legal/administrative dates. Mileage-based service intervals are the reason to keep the entity.
+- Whether to use it or delete it is **open**. Deciding it is step one of the next phase, together with
+  the FCM/APNs device-token table and the background sender.
+
 ## Client direction (decided July 2026)
 
 **Mobile-first: Expo / React Native (TypeScript)**, with the web version later via React Native Web.
@@ -254,9 +311,9 @@ Going mobile-first is mostly free on the backend, but not entirely. Consequences
 still owed:
 
 - **Phase 5 (done):** the HEIC decision and the 15 MB cap both come from phone cameras.
-- **Phase 6 — push notifications.** Renewal reminders are the product's core value; on mobile that
-  means FCM/APNs, i.e. a device-token table and a background sender. Design Phase 6 for push, not
-  just an in-app list. Biggest single consequence of the pivot.
+- **Phase 6b — push notifications.** Renewal reminders are the product's core value; on mobile that
+  means FCM/APNs, i.e. a device-token table and a background sender. Biggest single consequence of the
+  pivot, and the reason it was split off from the dashboard rather than rushed alongside it.
 - **Phase 7 — session length.** 15-min access + 7-day refresh forces a monthly re-login on a phone.
   Raise `Jwt:RefreshTokenDays` to ~60 when the app work starts; rotation already handles it.
 - **Phase 7 — API compatibility.** Store apps can't be force-updated, so old clients keep calling for
@@ -362,12 +419,14 @@ Every piece of code we add gets thorough tests (prefer over-testing). Two projec
 3 vehicles/garage ✅ (CRUD, owner-scoped) · 4 maintenance records ✅ (CRUD, mileage auto-advance) +
 vehicle obligations ✅ (insurance/casco/inspection/vignette/tax) · 5 documents ✅ (upload/download/
 delete, local disk behind `IFileStorage`, mandatory record-or-obligation link, cascade + file sweep) ·
-**6 dashboard + reminders + push (next)** · 7 Expo / React Native app · 8 deploy to Railway (+ R2) ·
-9 feedback & iteration
+6 dashboard ✅ (`GET /api/dashboard`, grouped by vehicle, overdue + expiring buckets) ·
+**6b reminders + push (next — needs its own design pass, deliberately deferred)** ·
+7 Expo / React Native app · 8 deploy to Railway (+ R2) · 9 feedback & iteration
 
 Deferred, worth picking up when the phase that needs it arrives:
 - **Search/filtering** (an MVP feature in the PRD): the garage list is unfiltered and unpaged, and
-  so are the record/obligation/document lists. Natural home is Phase 6.
+  so are the record/obligation/document lists. Explicitly split out of the dashboard work as its own
+  task (Aug 2026) — still owed before the client ships.
 - **Mileage coherence** — ✅ resolved in Phase 4: `PurchaseMileage`/`CurrentMileage` split + a
   maintenance record auto-advances `CurrentMileage` (high-water mark). No lower-bound or date-vs-mileage
   monotonicity rule yet (a backdated record may sit below an earlier one) — add if it ever bites.

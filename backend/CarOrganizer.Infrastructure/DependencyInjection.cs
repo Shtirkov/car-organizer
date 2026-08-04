@@ -2,6 +2,7 @@ using System.Text;
 using CarOrganizer.Application.Interfaces;
 using CarOrganizer.Domain.Entities;
 using CarOrganizer.Infrastructure.Authentication;
+using CarOrganizer.Infrastructure.Dashboard;
 using CarOrganizer.Infrastructure.Documents;
 using CarOrganizer.Infrastructure.Identity;
 using CarOrganizer.Infrastructure.MaintenanceRecords;
@@ -60,6 +61,8 @@ public static class DependencyInjection
 
         services.AddScoped<IVehicleObligationStore, VehicleObligationStore>();
         services.AddScoped<IVehicleObligationService, VehicleObligationService>();
+
+        services.AddScoped<IDashboardService, DashboardService>();
 
         services.Configure<FileStorageSettings>(configuration.GetSection(FileStorageSettings.SectionName));
         services.AddSingleton<IFileStorage, LocalFileStorage>();

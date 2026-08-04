@@ -17,6 +17,12 @@ public interface IMaintenanceRecordStore
     /// <summary>Every record for the vehicle, most recent service first.</summary>
     Task<IReadOnlyList<MaintenanceRecord>> ListByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The vehicle's most recent services, newest first, capped at <paramref name="count"/>. The cap is
+    /// applied in the database so a dashboard never drags years of history across the wire.
+    /// </summary>
+    Task<IReadOnlyList<MaintenanceRecord>> ListRecentByVehicleAsync(Guid vehicleId, int count, CancellationToken cancellationToken = default);
+
     /// <summary>The vehicle's record with this id, or <c>null</c> if there is no such record.</summary>
     Task<MaintenanceRecord?> FindByIdAsync(Guid recordId, Guid vehicleId, CancellationToken cancellationToken = default);
 

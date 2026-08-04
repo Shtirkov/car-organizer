@@ -31,6 +31,15 @@ public class MaintenanceRecordStore : IMaintenanceRecordStore
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<MaintenanceRecord>> ListRecentByVehicleAsync(Guid vehicleId, int count, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.MaintenanceRecords
+            .Where(r => r.VehicleId == vehicleId)
+            .OrderByDescending(r => r.Date)
+            .Take(count)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<MaintenanceRecord?> FindByIdAsync(Guid recordId, Guid vehicleId, CancellationToken cancellationToken = default)
     {
         // Scoping by VehicleId is what keeps a record reachable only through the vehicle the caller

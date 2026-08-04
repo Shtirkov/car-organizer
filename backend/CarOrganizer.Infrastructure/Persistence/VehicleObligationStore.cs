@@ -30,6 +30,16 @@ public class VehicleObligationStore : IVehicleObligationStore
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<VehicleObligation>> ListByOwnerDueByAsync(Guid ownerId, DateOnly dueBy, CancellationToken cancellationToken = default)
+    {
+        // Joins through the vehicle rather than taking a vehicleId, because the dashboard spans the
+        // whole garage. ValidUntil is indexed, and the cutoff keeps far-future renewals out entirely.
+        return await _dbContext.Obligations
+            .Where(o => o.Vehicle.OwnerId == ownerId && o.ValidUntil <= dueBy)
+            .OrderBy(o => o.ValidUntil)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<VehicleObligation?> FindByIdAsync(Guid obligationId, Guid vehicleId, CancellationToken cancellationToken = default)
     {
         return _dbContext.Obligations
