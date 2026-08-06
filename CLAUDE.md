@@ -323,6 +323,27 @@ still owed:
 - **Store costs, for planning:** Apple $99/yr, Google Play $25 one-time, plus Google's
   12-tester / 14-day closed-test requirement for new personal accounts.
 
+## App design — GarageBox (imported Aug 2026)
+
+The UI for Phase 7 is designed and frozen in [`design/`](./design/README.md) — 14 screens plus a
+design system (dark-only, amber accent, Space Grotesk / Plus Jakarta Sans / JetBrains Mono).
+It was generated *from this repo*, so its labels, enums and limits already match our DTOs.
+Start from [`design/README.md`](./design/README.md), not from the raw `.dc.html`.
+
+- **It is a snapshot, not a dependency.** Nothing builds against it; re-import from the Claude
+  Design project (id `97fe9b32-a72a-4dae-8dcd-e79c747f5c5b`) if it moves.
+- **Its dashboard "Direction B" is what we built** — fleet-first, grouped by vehicle. The other two
+  directions want a fleet-wide flattening we decided against in Phase 6.
+- **13 backend gaps are catalogued there**, verified against the code and sorted by phase: two are
+  exactly Phase 6b (reminder generation, push/email channels); seven more are owed before the client
+  ships (display name, SSO/reset, owner-wide `GET /api/documents`, search, cost totals, an obligation
+  *renew* action, one-tap odometer update, locale); thumbnails/signed URLs land with R2 in Phase 8.
+- **Two are product decisions, not just missing endpoints:** subscriptions/entitlements (the design
+  has a paywall and a free tier; the PRD describes no business model at all — this is new scope) and
+  currency on `Cost` (a bare `decimal` today, and cost totals depend on it).
+- **Tokens are CSS custom properties; RN has none.** Port `design/_ds/…/tokens/*.css` to a TS theme
+  object once. The values were approved, the mechanism wasn't.
+
 ## Enums over the wire
 
 - Enum-typed request/response fields (`MaintenanceType`, `ObligationType`) serialize as **numbers**
@@ -421,7 +442,8 @@ vehicle obligations ✅ (insurance/casco/inspection/vignette/tax) · 5 documents
 delete, local disk behind `IFileStorage`, mandatory record-or-obligation link, cascade + file sweep) ·
 6 dashboard ✅ (`GET /api/dashboard`, grouped by vehicle, overdue + expiring buckets) ·
 **6b reminders + push (next — needs its own design pass, deliberately deferred)** ·
-7 Expo / React Native app · 8 deploy to Railway (+ R2) · 9 feedback & iteration
+7 Expo / React Native app (UI designed — see [`design/`](./design/README.md)) ·
+8 deploy to Railway (+ R2) · 9 feedback & iteration
 
 Deferred, worth picking up when the phase that needs it arrives:
 - **Search/filtering** (an MVP feature in the PRD): the garage list is unfiltered and unpaged, and

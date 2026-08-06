@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/tokens/colors.css">
+<link rel="stylesheet" href="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/tokens/typography.css">
+<link rel="stylesheet" href="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/tokens/effects.css">
+<link rel="stylesheet" href="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/tokens/base.css">
+<link rel="stylesheet" href="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/styles.css">
+<script src="_ds/garagebox-design-system-0843ebc0-4c05-4930-9954-411e3515c465/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#08090b;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+a{color:#ffc880;text-decoration:none}a:hover{color:#ffb454}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(255,255,255,.07)}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 22px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#ffb454;color:#221b10;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 'Plus Jakarta Sans',system-ui,sans-serif;color:#f4f6fa}
+.dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.09);color:#f4f6fa;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 'Plus Jakarta Sans',system-ui,sans-serif;color:#8b93a3}
+.dv-opt:target .dv-oid{background:#ffb454;color:#221b10}
+.dv-next{margin:26px 0 0;font:12px/1.6 'Plus Jakarta Sans',system-ui,sans-serif;color:#5a6272}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">GarageBox — iOS app, 12 screens + 3 dashboard directions</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Clickable prototype — sign in, add a car, log a service, upload a doc</div>
+<div style="width:390px;height:844px;border-radius:46px;background:var(--surface-app);border:1px solid var(--border-strong);box-shadow:var(--shadow-overlay);overflow:hidden;display:flex;flex-direction:column;position:relative;flex:none">
+  <div style="height:52px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;font-size:13px;font-family:var(--font-mono);color:var(--text-body);z-index:3">
+    <span>9:41</span>
+    <span style="width:16px;height:9px;border-radius:2px;border:1px solid var(--text-faint);display:inline-block"></span>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column;position:relative">
+
+    <sc-if value="{{ sAuth }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;background:var(--grad-hero)">
+        <div style="padding:36px var(--gutter-screen) 32px;display:flex;flex-direction:column;flex:1">
+          <div style="width:48px;height:48px;border-radius:14px;background:var(--grad-accent);display:flex;align-items:center;justify-content:center">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#221b10" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6"></path><path d="M7 13h10"></path><path d="M7 17h10"></path><path d="M7 21h5"></path></svg>
+          </div>
+          <div style="font-family:var(--font-display);font-size:var(--text-h1);font-weight:700;letter-spacing:var(--track-display);color:var(--text-strong);margin-top:24px">GarageBox</div>
+          <div style="font-family:var(--font-body);font-size:15px;line-height:1.5;color:var(--text-muted);margin-top:8px;text-wrap:pretty">Your car's paperwork lives in six places. Let's fix that.</div>
+
+          <div style="margin-top:28px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SegmentedControl" options="{{ authTabs }}" value="{{ authMode }}" onChange="{{ setAuthMode }}" hint-size="100%,40px"></x-import>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:20px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Email" type="email" icon="mail" placeholder="ivan@example.com" value="{{ form.email }}" onChange="{{ fh.email }}" error="{{ err.email }}" hint-size="100%,70px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Password" type="password" icon="lock" placeholder="••••••••" value="{{ form.password }}" onChange="{{ fh.password }}" error="{{ err.password }}" hint="{{ passwordHint }}" hint-size="100%,70px"></x-import>
+            <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Repeat password" type="password" icon="lock" placeholder="••••••••" value="{{ form.password2 }}" onChange="{{ fh.password2 }}" error="{{ err.password2 }}" hint-size="100%,70px"></x-import>
+            </sc-if>
+          </div>
+
+          <div style="margin-top:20px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" size="lg" full-width="{{ true }}" onClick="{{ submitAuth }}" hint-size="100%,52px">{{ authCta }}</x-import>
+          </div>
+          <button type="button" onClick="{{ notBuilt }}" style="background:none;border:0;color:var(--text-muted);font-family:var(--font-body);font-size:13px;padding:14px 0;cursor:pointer">Forgot your password?</button>
+
+          <div style="display:flex;align-items:center;gap:12px;margin:8px 0 16px">
+            <div style="flex:1;height:1px;background:var(--border-subtle)"></div>
+            <span style="font-family:var(--font-body);font-size:11px;letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--text-faint)">or</span>
+            <div style="flex:1;height:1px;background:var(--border-subtle)"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SsoButton" provider="apple" onClick="{{ notBuilt }}" hint-size="100%,48px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SsoButton" provider="google" onClick="{{ notBuilt }}" hint-size="100%,48px"></x-import>
+          </div>
+          <div style="flex:1"></div>
+          <div style="font-family:var(--font-body);font-size:12px;color:var(--text-faint);text-align:center;padding-top:24px">Cancel any time. No handbrake turns.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sOnb }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;background:var(--grad-hero)">
+        <div style="padding:44px var(--gutter-screen) 28px;display:flex;flex-direction:column;flex:1">
+          <div style="font-family:var(--font-display);font-size:var(--text-display);line-height:var(--text-display-lh);font-weight:700;letter-spacing:var(--track-display);color:var(--text-strong);text-wrap:pretty">Every renewal, one screen.</div>
+          <div style="font-family:var(--font-body);font-size:15px;line-height:1.5;color:var(--text-muted);margin-top:12px;text-wrap:pretty">Add a car, file the paperwork against it, and we'll count down to the next date.</div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:32px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ListRow" icon="bell" icon-color="var(--accent)" icon-bg="var(--accent-tint)" title="We nudge you before it expires" subtitle="Insurance, inspection, road tax, vehicle tax." hint-size="100%,64px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ListRow" icon="folder" icon-color="var(--cat-service)" icon-bg="var(--gb-blue-tint)" title="Every PDF against its car" subtitle="Invoices, policies, certificates. Found in seconds." hint-size="100%,64px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ListRow" icon="gauge" icon-color="var(--cat-inspection)" icon-bg="var(--status-info-tint)" title="A service history that holds up" subtitle="Dates, mileage and cost — worth money at resale." hint-size="100%,64px"></x-import>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;padding-top:32px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" size="lg" full-width="{{ true }}" icon="plus" onClick="{{ goAddVehicle }}" hint-size="100%,52px">Add your first car</x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" size="lg" variant="ghost" full-width="{{ true }}" onClick="{{ goHome }}" hint-size="100%,52px">I'll do it later</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sHome }}" hint-placeholder-val="{{ false }}">
+      <dc-import name="GBDashboard" variant="{{ dashVariant }}" vehicles="{{ vehicles }}" selected-id="{{ selectedId }}" on-select="{{ selectVehicle }}" on-nav="{{ nav }}" tab="{{ tab }}" on-tab="{{ setTab }}" loading="{{ loading }}" greeting="{{ greeting }}" plan="{{ plan }}" docs-used="{{ docsUsed }}" doc-limit="{{ docLimit }}" hint-size="100%,100%"></dc-import>
+    </sc-if>
+
+    <sc-if value="{{ sEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="Your garage" title="{{ greeting }}" hint-size="100%,92px"></x-import>
+        <div style="padding:40px var(--gutter-screen) 120px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.EmptyState" icon="car-front" title="An empty garage" body="Add a car and we'll start counting down to its next renewal." action="{{ addCarAction }}" hint-size="100%,260px"></x-import>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sRecords }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="Across the fleet" title="Records" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 120px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SegmentedControl" options="{{ recordFilters }}" value="{{ recordFilter }}" onChange="{{ setRecordFilter }}" hint-size="100%,40px"></x-import>
+          <sc-for list="{{ recordGroups }}" as="g" hint-placeholder-count="2">
+            <div style="margin-top:22px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SectionHeader" title="{{ g.label }}" hint-size="100%,28px"></x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 8 }}" hint-size="100%,180px">
+                <sc-for list="{{ g.items }}" as="s" hint-placeholder-count="3">
+                  <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.MaintenanceRow" type="{{ s.type }}" title="{{ s.title }}" date="{{ s.sub }}" cost="{{ s.costFmt }}" mileage="{{ s.mileageFmt }}" has-document="{{ s.hasDocument }}" onClick="{{ s.onClick }}" hint-size="100%,62px"></x-import>
+                </sc-for>
+              </x-import>
+            </div>
+          </sc-for>
+          <div style="margin-top:20px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" icon="plus" onClick="{{ goAddRecord }}" hint-size="100%,44px">Log a service</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sVehicle }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="{{ car.plate }}" title="{{ car.name }}" back="{{ true }}" onBack="{{ back }}" actions="{{ vehicleActions }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 120px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.VehicleCard" make="{{ car.make }}" model="{{ car.model }}" year="{{ car.year }}" plate="{{ car.plate }}" mileage="{{ car.mileageFmt }}" status="{{ car.status }}" status-label="{{ car.statusLabel }}" selected="{{ true }}" hint-size="100%,132px"></x-import>
+          <div style="margin-top:16px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SegmentedControl" options="{{ vehicleSegs }}" value="{{ seg }}" onChange="{{ setSeg }}" hint-size="100%,40px"></x-import>
+          </div>
+
+          <sc-if value="{{ segOverview }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.StatTile" icon="gauge" label="Odometer" value="{{ car.mileageFmt }}" unit="km" hint-size="100%,78px"></x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.StatTile" icon="trending-up" label="Spent 2026" value="{{ car.spentFmt }}" tone="accent" hint-size="100%,78px"></x-import>
+            </div>
+            <div style="margin-top:24px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SectionHeader" title="Identity" hint-size="100%,28px"></x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 4 }}" hint-size="100%,200px">
+                <sc-for list="{{ car.facts }}" as="f" hint-placeholder-count="4">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 12px;border-bottom:1px solid var(--border-subtle)">
+                    <span style="font-family:var(--font-body);font-size:13px;color:var(--text-muted)">{{ f.label }}</span>
+                    <span style="font-family:var(--font-mono);font-size:13px;color:var(--text-strong);letter-spacing:.02em">{{ f.value }}</span>
+                  </div>
+                </sc-for>
+              </x-import>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" icon="pencil" onClick="{{ goEditVehicle }}" hint-size="100%,44px">Edit car</x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="ghost" icon="trash-2" onClick="{{ notBuilt }}" hint-size="auto,44px">Remove</x-import>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ segServices }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:16px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 8 }}" hint-size="100%,220px">
+                <sc-for list="{{ car.serviceRows }}" as="s" hint-placeholder-count="3">
+                  <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.MaintenanceRow" type="{{ s.type }}" title="{{ s.title }}" date="{{ s.dateFmt }}" cost="{{ s.costFmt }}" mileage="{{ s.mileageFmt }}" has-document="{{ s.hasDocument }}" onClick="{{ s.onClick }}" hint-size="100%,62px"></x-import>
+                </sc-for>
+              </x-import>
+              <div style="margin-top:14px">
+                <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" icon="plus" onClick="{{ goAddRecord }}" hint-size="100%,44px">Log a service</x-import>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ segRenewals }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:16px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 8 }}" hint-size="100%,220px">
+                <sc-for list="{{ car.renewalRows }}" as="o" hint-placeholder-count="3">
+                  <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ObligationRow" type="{{ o.type }}" title="{{ o.title }}" provider="{{ o.provider }}" valid-until="{{ o.dateFmt }}" status="{{ o.status }}" status-label="{{ o.statusLabel }}" has-document="{{ o.hasDocument }}" onClick="{{ o.onClick }}" hint-size="100%,62px"></x-import>
+                </sc-for>
+              </x-import>
+              <div style="margin-top:14px">
+                <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" icon="plus" onClick="{{ goAddObligation }}" hint-size="100%,44px">Add a renewal</x-import>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ segDocs }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ car.docRows }}" as="d" hint-placeholder-count="3">
+                <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ListRow" icon="{{ d.icon }}" icon-color="var(--cat-document)" icon-bg="var(--surface-raised)" title="{{ d.name }}" subtitle="{{ d.sub }}" meta="{{ d.size }}" chevron="{{ true }}" onClick="{{ d.onClick }}" hint-size="100%,64px"></x-import>
+              </sc-for>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" icon="upload" onClick="{{ openUpload }}" hint-size="100%,44px">Upload a document</x-import>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sAddVehicle }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="Garage" title="{{ vehicleFormTitle }}" back="{{ true }}" onBack="{{ back }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 40px;display:flex;flex-direction:column;gap:14px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Make" placeholder="Volkswagen" value="{{ form.make }}" onChange="{{ fh.make }}" error="{{ err.make }}" hint-size="100%,70px"></x-import>
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Model" placeholder="Passat" value="{{ form.model }}" onChange="{{ fh.model }}" error="{{ err.model }}" hint-size="100%,70px"></x-import>
+          <div style="display:flex;gap:12px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Year" mono="{{ true }}" placeholder="2018" value="{{ form.year }}" onChange="{{ fh.year }}" error="{{ err.year }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Plate" mono="{{ true }}" placeholder="CA 1234 KX" value="{{ form.plate }}" onChange="{{ fh.plate }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+          </div>
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="VIN" mono="{{ true }}" icon="scan-line" placeholder="WVWZZZ3CZJE123456" hint="17 characters. Optional — scan it later." value="{{ form.vin }}" onChange="{{ fh.vin }}" error="{{ err.vin }}" hint-size="100%,70px"></x-import>
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Engine" placeholder="2.0 TDI" value="{{ form.engine }}" onChange="{{ fh.engine }}" hint-size="100%,70px"></x-import>
+          <div style="display:flex;gap:12px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Mileage at purchase" mono="{{ true }}" suffix="km" placeholder="96000" value="{{ form.purchaseMileage }}" onChange="{{ fh.purchaseMileage }}" error="{{ err.purchaseMileage }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Odometer now" mono="{{ true }}" suffix="km" placeholder="184300" value="{{ form.currentMileage }}" onChange="{{ fh.currentMileage }}" error="{{ err.currentMileage }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+          </div>
+          <div style="margin-top:6px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" size="lg" full-width="{{ true }}" onClick="{{ saveVehicle }}" hint-size="100%,52px">Park it in the garage</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sAddRecord }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="{{ car.name }}" title="{{ recordFormTitle }}" back="{{ true }}" onBack="{{ back }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 40px;display:flex;flex-direction:column;gap:14px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Select" label="What was done" options="{{ maintenanceOptions }}" value="{{ form.type }}" onChange="{{ fh.type }}" hint-size="100%,70px"></x-import>
+          <div style="display:flex;gap:12px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Date" type="date" mono="{{ true }}" value="{{ form.date }}" onChange="{{ fh.date }}" error="{{ err.date }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Odometer" mono="{{ true }}" suffix="km" placeholder="184300" value="{{ form.mileage }}" onChange="{{ fh.mileage }}" error="{{ err.mileage }}" hint="{{ mileageHint }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+          </div>
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Cost" mono="{{ true }}" suffix="{{ currencyCode }}" placeholder="89" value="{{ form.cost }}" onChange="{{ fh.cost }}" error="{{ err.cost }}" hint-size="100%,70px"></x-import>
+          <div>
+            <div style="font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text-body);margin-bottom:8px">Notes</div>
+            <textarea rows="3" placeholder="Bosch filter, oil 5W-30, next change at 191 000." value="{{ form.notes }}" onChange="{{ fh.notes }}" style="width:100%;box-sizing:border-box;resize:none;background:var(--surface-input);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px 14px;color:var(--text-strong);font-family:var(--font-body);font-size:14px;outline:none"></textarea>
+          </div>
+          <div>
+            <div style="font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text-body);margin-bottom:8px">Invoice</div>
+            <sc-if value="{{ hasAttachment }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.DocumentChip" name="{{ attachment.name }}" size="{{ attachment.size }}" kind="{{ attachment.kind }}" onRemove="{{ removeAttachment }}" hint-size="auto,40px"></x-import>
+            </sc-if>
+            <sc-if value="{{ noAttachment }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" icon="paperclip" onClick="{{ openUpload }}" hint-size="100%,44px">Attach the invoice</x-import>
+            </sc-if>
+          </div>
+          <div style="margin-top:6px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" size="lg" full-width="{{ true }}" onClick="{{ saveRecord }}" hint-size="100%,52px">Log it</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sAddObligation }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="{{ car.name }}" title="{{ obligationFormTitle }}" back="{{ true }}" onBack="{{ back }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 40px;display:flex;flex-direction:column;gap:14px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Select" label="Type" options="{{ obligationOptions }}" value="{{ form.type }}" onChange="{{ fh.type }}" hint-size="100%,70px"></x-import>
+          <div style="display:flex;gap:12px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Valid from" type="date" mono="{{ true }}" value="{{ form.validFrom }}" onChange="{{ fh.validFrom }}" error="{{ err.validFrom }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Valid until" type="date" mono="{{ true }}" value="{{ form.validUntil }}" onChange="{{ fh.validUntil }}" error="{{ err.validUntil }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+          </div>
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Provider" placeholder="Northbridge" value="{{ form.provider }}" onChange="{{ fh.provider }}" hint-size="100%,70px"></x-import>
+          <div style="display:flex;gap:12px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Policy number" mono="{{ true }}" placeholder="BG/03/12345" value="{{ form.policyNumber }}" onChange="{{ fh.policyNumber }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Input" label="Cost" mono="{{ true }}" suffix="{{ currencyCode }}" placeholder="218" value="{{ form.cost }}" onChange="{{ fh.cost }}" error="{{ err.cost }}" style="{{ half }}" hint-size="100%,70px"></x-import>
+          </div>
+          <div style="margin-top:8px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SectionHeader" title="Remind me" hint-size="100%,28px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 4 }}" hint-size="100%,180px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Switch" label="Push notification" description="On this phone." checked="{{ form.push }}" onChange="{{ fh.push }}" hint-size="100%,60px"></x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Switch" label="Email" description="To ivan@example.com." checked="{{ form.emailNudge }}" onChange="{{ fh.emailNudge }}" hint-size="100%,60px"></x-import>
+              <div style="padding:8px 12px 12px">
+                <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Select" label="First nudge" options="{{ leadOptions }}" value="{{ form.lead }}" onChange="{{ fh.lead }}" hint-size="100%,70px"></x-import>
+              </div>
+            </x-import>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Badge" tone="info" icon="circle-alert" hint-size="auto,22px">Needs backend</x-import>
+              <span style="font-family:var(--font-body);font-size:12px;color:var(--text-faint)">Reminder channels aren't stored yet.</span>
+            </div>
+          </div>
+          <div style="margin-top:6px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" size="lg" full-width="{{ true }}" onClick="{{ saveObligation }}" hint-size="100%,52px">Save the renewal</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sDocs }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="Across the fleet" title="Documents" actions="{{ docActions }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 120px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SegmentedControl" options="{{ docFilters }}" value="{{ docFilter }}" onChange="{{ setDocFilter }}" hint-size="100%,40px"></x-import>
+          <sc-if value="{{ showDocQuota }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:16px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 14 }}" hint-size="100%,80px">
+                <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ProgressBar" value="{{ docQuotaPct }}" tone="{{ docQuotaTone }}" label="Free plan storage" value-label="{{ docQuotaLabel }}" hint-size="100%,44px"></x-import>
+              </x-import>
+            </div>
+          </sc-if>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ docRows }}" as="d" hint-placeholder-count="5">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ListRow" icon="{{ d.icon }}" icon-color="{{ d.hue }}" icon-bg="{{ d.tint }}" title="{{ d.name }}" subtitle="{{ d.sub }}" meta="{{ d.size }}" chevron="{{ true }}" onClick="{{ d.onClick }}" hint-size="100%,64px"></x-import>
+            </sc-for>
+            <sc-if value="{{ noDocs }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.EmptyState" icon="folder" title="Nothing filed here yet" body="Upload the invoice or policy and it lives with the car forever." action="{{ uploadAction }}" hint-size="100%,240px"></x-import>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sDocViewer }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="Document" title="{{ doc.short }}" back="{{ true }}" onBack="{{ back }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 40px">
+          <div style="height:340px;border-radius:var(--radius-lg);background:var(--surface-sunken);border:1px solid var(--border-subtle);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-faint)">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Icon" name="file-text" size="{{ 32 }}" hint-size="32px,32px"></x-import>
+            <span style="font-family:var(--font-mono);font-size:12px">{{ doc.kindLabel }} preview</span>
+          </div>
+          <div style="margin-top:16px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 4 }}" hint-size="100%,180px">
+              <sc-for list="{{ doc.facts }}" as="f" hint-placeholder-count="4">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 12px;border-bottom:1px solid var(--border-subtle)">
+                  <span style="font-family:var(--font-body);font-size:13px;color:var(--text-muted)">{{ f.label }}</span>
+                  <span style="font-family:var(--font-mono);font-size:13px;color:var(--text-strong)">{{ f.value }}</span>
+                </div>
+              </sc-for>
+            </x-import>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" icon="upload" onClick="{{ notBuilt }}" hint-size="100%,44px">Download</x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="danger" icon="trash-2" onClick="{{ deleteDoc }}" hint-size="auto,44px">Delete</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sReminders }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="Derived from your renewals" title="Reminders" back="{{ true }}" onBack="{{ back }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 40px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 4 }}" hint-size="100%,124px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Switch" label="Push" description="Nudges at 30, 14 and 3 days." checked="{{ settings.push }}" onChange="{{ togglePush }}" hint-size="100%,60px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Switch" label="Email" description="A single summary, monthly." checked="{{ settings.email }}" onChange="{{ toggleEmail }}" hint-size="100%,60px"></x-import>
+          </x-import>
+          <sc-for list="{{ reminderGroups }}" as="g" hint-placeholder-count="3">
+            <div style="margin-top:22px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SectionHeader" title="{{ g.label }}" hint-size="100%,28px"></x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 8 }}" hint-size="100%,140px">
+                <sc-for list="{{ g.items }}" as="o" hint-placeholder-count="2">
+                  <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ObligationRow" type="{{ o.type }}" title="{{ o.title }}" provider="{{ o.sub }}" valid-until="{{ o.dateFmt }}" status="{{ o.status }}" status-label="{{ o.statusLabel }}" has-document="{{ o.hasDocument }}" onClick="{{ o.onClick }}" hint-size="100%,62px"></x-import>
+                </sc-for>
+              </x-import>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="Account" title="Profile" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 120px">
+          <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 16 }}" hint-size="100%,96px">
+            <div style="display:flex;gap:14px;align-items:center">
+              <div style="width:48px;height:48px;border-radius:999px;background:var(--accent-tint);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:17px;font-weight:700">IV</div>
+              <div style="flex:1">
+                <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text-strong)">Ivan Vasilev</div>
+                <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:3px">ivan@example.com</div>
+              </div>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.IconButton" icon="pencil" label="Edit profile" onClick="{{ notBuilt }}" hint-size="40px,40px"></x-import>
+            </div>
+          </x-import>
+
+          <div style="margin-top:24px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SectionHeader" title="Preferences" hint-size="100%,28px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Select" label="Currency" options="{{ currencyOptions }}" value="{{ settings.currency }}" onChange="{{ setCurrency }}" hint="Applied to every cost you've logged." hint-size="100%,70px"></x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Select" label="Language" options="{{ languageOptions }}" value="{{ settings.lang }}" onChange="{{ setLang }}" hint="Bulgarian copy ships with the app — no locale field on the backend yet." hint-size="100%,70px"></x-import>
+            </div>
+          </div>
+
+          <div style="margin-top:24px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SectionHeader" title="Notifications" hint-size="100%,28px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 4 }}" hint-size="100%,124px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Switch" label="Push" description="Renewal nudges on this phone." checked="{{ settings.push }}" onChange="{{ togglePush }}" hint-size="100%,60px"></x-import>
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Switch" label="Email" description="A monthly summary of what's due." checked="{{ settings.email }}" onChange="{{ toggleEmail }}" hint-size="100%,60px"></x-import>
+            </x-import>
+          </div>
+
+          <div style="margin-top:24px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.SectionHeader" title="Plan" hint-size="100%,28px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 4 }}" hint-size="100%,64px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ListRow" icon="sparkles" icon-color="var(--accent)" icon-bg="var(--accent-tint)" title="{{ planRowTitle }}" subtitle="{{ planRowSub }}" chevron="{{ true }}" onClick="{{ goPaywall }}" hint-size="100%,64px"></x-import>
+            </x-import>
+          </div>
+
+          <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="secondary" full-width="{{ true }}" onClick="{{ signOut }}" hint-size="100%,44px">Sign out</x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" variant="ghost" full-width="{{ true }}" onClick="{{ notBuilt }}" hint-size="100%,44px">Delete account</x-import>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sPaywall }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;background:var(--grad-hero)">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.AppHeader" eyebrow="GarageBox Pro" title="Room for the whole fleet" back="{{ true }}" onBack="{{ back }}" hint-size="100%,92px"></x-import>
+        <div style="padding:0 var(--gutter-screen) 40px">
+          <sc-if value="{{ showPaywallQuota }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 14 }}" hint-size="100%,80px">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ProgressBar" value="{{ docQuotaPct }}" tone="{{ docQuotaTone }}" label="Documents on the free plan" value-label="{{ docQuotaLabel }}" hint-size="100%,44px"></x-import>
+            </x-import>
+          </sc-if>
+          <sc-if value="{{ showPaywallStatus }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Card" padding="{{ 14 }}" hint-size="100%,60px">
+              <div style="font-family:var(--font-body);font-size:13px;color:var(--text-body)">{{ paywallStatusLine }}</div>
+            </x-import>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.PlanCard" name="Free" price="€0" period="/ month" tagline="One car, ten documents." features="{{ freeFeatures }}" selected="{{ planFreeSelected }}" onClick="{{ pickFree }}" hint-size="100%,220px"></x-import>
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.PlanCard" name="Pro" price="€5" period="/ month" tagline="Every car you own." features="{{ proFeatures }}" badge="Best value" selected="{{ planProSelected }}" onClick="{{ pickPro }}" hint-size="100%,240px"></x-import>
+          </div>
+          <div style="margin-top:18px">
+            <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Button" size="lg" full-width="{{ true }}" onClick="{{ confirmPlan }}" hint-size="100%,52px">{{ planCtaLabel }}</x-import>
+          </div>
+          <div style="font-family:var(--font-body);font-size:12px;color:var(--text-faint);text-align:center;margin-top:14px">Cancel any time. No handbrake turns.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showTabBar }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.TabBar" items="{{ tabItems }}" value="{{ tab }}" onChange="{{ setTab }}" hint-size="100%,72px"></x-import>
+    </sc-if>
+
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end">
+        <button type="button" onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:var(--surface-scrim);border:0;cursor:pointer"></button>
+        <div style="position:relative;background:var(--surface-card);border-top:1px solid var(--border-subtle);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:10px 20px 28px;box-shadow:var(--shadow-overlay)">
+          <div style="width:38px;height:4px;border-radius:999px;background:var(--border-strong);margin:0 auto 18px"></div>
+          <div style="font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--text-strong);margin-bottom:14px">{{ sheetTitle }}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ sheetItems }}" as="i" hint-placeholder-count="3">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.ListRow" icon="{{ i.icon }}" icon-color="{{ i.hue }}" icon-bg="{{ i.tint }}" title="{{ i.title }}" subtitle="{{ i.sub }}" chevron="{{ true }}" onClick="{{ i.onClick }}" hint-size="100%,64px"></x-import>
+            </sc-for>
+          </div>
+          <sc-if value="{{ uploadError }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--radius-md);background:var(--status-overdue-tint);border:1px solid var(--status-overdue)">
+              <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Icon" name="circle-alert" size="{{ 18 }}" color="var(--status-overdue)" hint-size="18px,18px"></x-import>
+              <div style="flex:1">
+                <div style="font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text-strong)">{{ uploadErrorTitle }}</div>
+                <div style="font-family:var(--font-body);font-size:12px;color:var(--text-muted);margin-top:3px">{{ uploadErrorBody }}</div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:16px;right:16px;bottom:96px;z-index:30;display:flex;gap:10px;align-items:center;padding:13px 16px;border-radius:var(--radius-md);background:var(--surface-raised);border:1px solid var(--border-subtle);box-shadow:var(--shadow-raised)">
+        <x-import component-from-global-scope="GarageBoxDesignSystem_0843eb.Icon" name="circle-check" size="{{ 18 }}" color="var(--status-ok)" hint-size="18px,18px"></x-import>
+        <span style="font-family:var(--font-body);font-size:13px;color:var(--text-strong)">{{ toast }}</span>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Dashboard A — renewal-first: one countdown, everything else below</div>
+<div style="width:390px;height:844px;border-radius:46px;background:var(--surface-app);border:1px solid var(--border-strong);box-shadow:var(--shadow-overlay);overflow:hidden;display:flex;flex-direction:column;flex:none">
+  <div style="height:52px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;font-size:13px;font-family:var(--font-mono);color:var(--text-body)"><span>9:41</span><span style="width:16px;height:9px;border-radius:2px;border:1px solid var(--text-faint);display:inline-block"></span></div>
+  <dc-import name="GBDashboard" variant="renewals" vehicles="{{ vehicles }}" selected-id="{{ demoId }}" greeting="Hello, Ivan" plan="trial" hint-size="100%,100%"></dc-import>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Dashboard B — fleet-first: pick a car, then read its paperwork</div>
+<div style="width:390px;height:844px;border-radius:46px;background:var(--surface-app);border:1px solid var(--border-strong);box-shadow:var(--shadow-overlay);overflow:hidden;display:flex;flex-direction:column;flex:none">
+  <div style="height:52px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;font-size:13px;font-family:var(--font-mono);color:var(--text-body)"><span>9:41</span><span style="width:16px;height:9px;border-radius:2px;border:1px solid var(--text-faint);display:inline-block"></span></div>
+  <dc-import name="GBDashboard" variant="fleet" vehicles="{{ vehicles }}" selected-id="{{ demoId }}" greeting="Hello, Ivan" plan="trial" hint-size="100%,100%"></dc-import>
+</div>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Dashboard C — one timeline for the whole fleet</div>
+<div style="width:390px;height:844px;border-radius:46px;background:var(--surface-app);border:1px solid var(--border-strong);box-shadow:var(--shadow-overlay);overflow:hidden;display:flex;flex-direction:column;flex:none">
+  <div style="height:52px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;font-size:13px;font-family:var(--font-mono);color:var(--text-body)"><span>9:41</span><span style="width:16px;height:9px;border-radius:2px;border:1px solid var(--text-faint);display:inline-block"></span></div>
+  <dc-import name="GBDashboard" variant="timeline" vehicles="{{ vehicles }}" selected-id="{{ demoId }}" greeting="Hello, Ivan" plan="trial" hint-size="100%,100%"></dc-import>
+</div>
+</div>
+
+<div class="dv-opt" id="1e">
+<div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Backend gaps — everything the design assumes that the API can't do yet</div>
+<div style="width:520px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:26px 28px">
+  <div style="font-family:var(--font-display);font-size:21px;font-weight:600;letter-spacing:var(--track-heading);color:var(--text-strong)">Add these before the FE build</div>
+  <div style="font-family:var(--font-body);font-size:13px;line-height:1.55;color:var(--text-muted);margin-top:8px;text-wrap:pretty">Grounded in the current <span style="font-family:var(--font-mono);font-size:12px">main</span> branch — Vehicle, MaintenanceRecord, VehicleObligation, Document and the five controllers.</div>
+  <div style="display:flex;flex-direction:column;gap:14px;margin-top:22px">
+    <sc-for list="{{ gaps }}" as="g" hint-placeholder-count="6">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid var(--border-subtle)">
+        <span style="flex:none;width:22px;height:22px;border-radius:6px;background:{{ g.tint }};color:{{ g.hue }};font-family:var(--font-mono);font-size:11px;display:flex;align-items:center;justify-content:center">{{ g.n }}</span>
+        <div style="flex:1">
+          <div style="font-family:var(--font-body);font-size:14px;font-weight:600;color:var(--text-strong)">{{ g.title }}</div>
+          <div style="font-family:var(--font-body);font-size:13px;line-height:1.5;color:var(--text-muted);margin-top:3px;text-wrap:pretty">{{ g.body }}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-faint);margin-top:5px">{{ g.where }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "build out <a class="dv-oid" href="#1b">1b</a> as the default dashboard" · "show the free-plan locked state in <a class="dv-oid" href="#1a">1a</a>" · "add a service-interval screen"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;dashboardStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;renewals&quot;,&quot;fleet&quot;,&quot;timeline&quot;],&quot;default&quot;:&quot;renewals&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+const TODAY = '2026-08-06';
+
+const OB_META = {
+  insurance: { label: 'Liability insurance', row: 'insurance', icon: 'shield-check', hue: 'var(--cat-insurance)', tint: 'var(--gb-green-tint)' },
+  coverage: { label: 'Full coverage', row: 'coverage', icon: 'badge-check', hue: 'var(--cat-insurance)', tint: 'var(--gb-green-tint)' },
+  inspection: { label: 'Roadworthiness inspection', row: 'inspection', icon: 'scan-line', hue: 'var(--cat-inspection)', tint: 'var(--status-info-tint)' },
+  roadTax: { label: 'Road tax sticker', row: 'roadTax', icon: 'receipt', hue: 'var(--cat-tax)', tint: 'var(--status-due-tint)' },
+  tax: { label: 'Vehicle tax', row: 'tax', icon: 'receipt', hue: 'var(--cat-tax)', tint: 'var(--status-due-tint)' },
+  other: { label: 'Other obligation', row: 'other', icon: 'file-text', hue: 'var(--text-muted)', tint: 'var(--surface-raised)' },
+};
+
+const MT_META = {
+  oil: { label: 'Oil & filter change', icon: 'droplet' },
+  tires: { label: 'Tire change', icon: 'disc' },
+  brakes: { label: 'Brake service', icon: 'disc' },
+  inspection: { label: 'Inspection', icon: 'scan-line' },
+  repair: { label: 'Repair', icon: 'wrench' },
+  battery: { label: 'Battery', icon: 'battery' },
+  filters: { label: 'Filters', icon: 'funnel' },
+  suspension: { label: 'Suspension', icon: 'wrench' },
+  other: { label: 'Other service', icon: 'wrench' },
+};
+
+const SEED = [
+  { id: 'v1', make: 'Volkswagen', model: 'Passat', year: 2018, plate: 'CA 1234 KX', vin: 'WVWZZZ3CZJE123456', engine: '2.0 TDI', purchaseMileage: 96000, mileage: 184300,
+    obligations: [
+      { id: 'o1', type: 'inspection', validFrom: '2025-07-28', validUntil: '2026-07-28', cost: 45, provider: 'AutoTest Center', policyNumber: 'TP-88214', doc: 'd1' },
+      { id: 'o2', type: 'roadTax', validFrom: '2025-08-24', validUntil: '2026-08-24', cost: 49, provider: 'Transport agency', policyNumber: 'VG-2025-77120', doc: null },
+      { id: 'o3', type: 'insurance', validFrom: '2025-09-14', validUntil: '2026-09-14', cost: 218, provider: 'Northbridge', policyNumber: 'BG/03/12345', doc: 'd2' } ],
+    records: [
+      { id: 'r1', type: 'oil', date: '2026-03-12', mileage: 181200, cost: 89, notes: 'Bosch filter, 5W-30.', doc: 'd3' },
+      { id: 'r2', type: 'brakes', date: '2026-01-28', mileage: 178450, cost: 164, notes: 'Front pads.', doc: null },
+      { id: 'r3', type: 'tires', date: '2025-11-04', mileage: 176900, cost: 40, notes: 'Winter set on.', doc: 'd4' } ] },
+  { id: 'v2', make: 'Toyota', model: 'Yaris', year: 2021, plate: 'CB 8842 MP', vin: 'VNKKL3D3X0A123987', engine: '1.5 Hybrid', purchaseMileage: 12400, mileage: 61040,
+    obligations: [
+      { id: 'o4', type: 'insurance', validFrom: '2025-08-30', validUntil: '2026-08-30', cost: 156, provider: 'Northbridge', policyNumber: 'BG/03/55418', doc: 'd5' },
+      { id: 'o5', type: 'coverage', validFrom: '2026-01-30', validUntil: '2027-01-30', cost: 640, provider: 'Northbridge', policyNumber: 'KS/11/2094', doc: 'd6' } ],
+    records: [
+      { id: 'r4', type: 'oil', date: '2026-05-02', mileage: 58900, cost: 72, notes: '', doc: 'd7' },
+      { id: 'r5', type: 'filters', date: '2026-05-02', mileage: 58900, cost: 34, notes: 'Cabin filter.', doc: null } ] },
+  { id: 'v3', make: 'Ford', model: 'Transit', year: 2019, plate: 'CA 7710 HP', vin: 'WF0XXXTTGXKY12045', engine: '2.0 EcoBlue', purchaseMileage: 88000, mileage: 220100,
+    obligations: [
+      { id: 'o6', type: 'tax', validFrom: '2025-06-30', validUntil: '2026-06-30', cost: 120, provider: 'Municipality', policyNumber: 'MPS-2026-4471', doc: null },
+      { id: 'o7', type: 'inspection', validFrom: '2025-08-09', validUntil: '2026-08-09', cost: 60, provider: 'DriveSafe', policyNumber: 'TP-90311', doc: 'd8' } ],
+    records: [
+      { id: 'r6', type: 'repair', date: '2026-06-18', mileage: 217400, cost: 430, notes: 'Turbo hose.', doc: 'd9' },
+      { id: 'r7', type: 'battery', date: '2026-02-09', mileage: 212000, cost: 150, notes: '', doc: null } ] },
+  { id: 'v4', make: 'Skoda', model: 'Octavia', year: 2022, plate: 'CB 4402 KA', vin: 'TMBJJ7NE0N0123456', engine: '1.5 TSI', purchaseMileage: 5, mileage: 38900,
+    obligations: [
+      { id: 'o8', type: 'insurance', validFrom: '2026-02-11', validUntil: '2027-02-11', cost: 240, provider: 'Vitosha Insurance', policyNumber: 'BG/07/88120', doc: 'd10' },
+      { id: 'o9', type: 'inspection', validFrom: '2026-03-02', validUntil: '2027-03-02', cost: 55, provider: 'AutoTest Center', policyNumber: 'TP-91882', doc: null } ],
+    records: [ { id: 'r8', type: 'oil', date: '2026-07-01', mileage: 36100, cost: 95, notes: '', doc: 'd11' } ] },
+  { id: 'v5', make: 'Dacia', model: 'Duster', year: 2016, plate: 'PB 9931 CM', vin: 'UU1HSDCVG55123321', engine: '1.6 SCe', purchaseMileage: 61000, mileage: 149500,
+    obligations: [ { id: 'o10', type: 'insurance', validFrom: '2025-07-16', validUntil: '2026-07-16', cost: 187, provider: 'Vitosha Insurance', policyNumber: 'BG/09/33127', doc: null } ],
+    records: [
+      { id: 'r9', type: 'suspension', date: '2026-04-22', mileage: 147000, cost: 310, notes: 'Rear shocks.', doc: 'd12' },
+      { id: 'r10', type: 'tires', date: '2025-10-30', mileage: 143200, cost: 45, notes: '', doc: null } ] },
+];
+
+const GAPS = [
+  { title: 'Reminder generation and delivery', body: 'The Reminder entity and its EF configuration exist, but there is no service, store or controller — nothing turns ValidUntil into a reminder and nothing sends it. Needed: a scheduled generator, GET /api/reminders, and a completion endpoint.', where: 'Domain/Entities/Reminder.cs · no IReminderService' },
+  { title: 'Push + email channels', body: 'No device-token storage, no mail sender, no per-obligation channel preference. The "Remind me" block on Add renewal writes nowhere today.', where: 'new: NotificationPreference, DeviceToken, ISender' },
+  { title: 'Subscriptions and entitlements', body: 'No plan, no billing, no server-side limits. Free tier (1 car, 10 documents) must be enforced in VehicleService.CreateAsync and DocumentService.UploadAsync, not just hidden in the UI.', where: 'Infrastructure/Vehicles · Infrastructure/Documents' },
+  { title: 'Currency on money fields', body: 'Cost is a bare decimal on both MaintenanceRecord and VehicleObligation, and the user has no currency preference. Multi-currency needs a column (or a user-level setting) before any total can be trusted.', where: 'Domain/Entities/*.cs · User' },
+  { title: 'User profile fields', body: 'User : IdentityUser carries no display name; /api/auth/me returns id and email only. "Hello, Ivan" needs a name, and the avatar needs something to derive initials from.', where: 'Domain/Entities/User.cs · AuthController.Me' },
+  { title: 'SSO, password reset, email confirmation', body: 'AuthController has register / login / refresh / logout / me. Apple and Google sign-in, "forgot password" and confirmation mail are all absent.', where: 'API/Controllers/AuthController.cs' },
+  { title: 'Owner-wide documents list', body: 'Documents are only reachable per vehicle (/api/vehicles/{id}/documents). The Documents tab lists the whole fleet, so it needs GET /api/documents with filters — or five round-trips.', where: 'API/Controllers/DocumentsController.cs' },
+  { title: 'Thumbnails and signed URLs', body: 'Only metadata plus a byte stream at /{id}/content. A phone list wants a thumbnail and a short-lived URL rather than streaming 15 MB through the API to render a preview.', where: 'Application/Interfaces/IFileStorage.cs' },
+  { title: 'Search', body: 'The header search hits nothing. A single endpoint across plate, make/model, provider, policy number and file name would cover every use in the design.', where: 'new: GET /api/search' },
+  { title: 'Cost totals', body: 'DashboardResponse carries no money. "Spent 2026" on the vehicle screen needs a per-vehicle, per-period aggregate — summing on the client means fetching every record.', where: 'Application/Dashboard/DashboardResponse.cs' },
+  { title: 'Renewing an obligation', body: 'There is no "renew" action — the client would POST a fresh obligation and the old one just sits there. Decide whether a renewal supersedes its predecessor and link them.', where: 'VehicleObligationsController' },
+  { title: 'Odometer update without a service', body: 'CurrentMileage only moves via a maintenance record or a full vehicle PUT. The app wants a one-tap odometer update.', where: 'VehicleService.UpdateAsync' },
+  { title: 'Language / locale', body: 'No locale on the user, and ObligationType is Bulgarian-named in the enum while the UI is English. Pick where the translation lives before the FE hard-codes it.', where: 'Domain/Enums/ObligationType.cs' },
+];
+
+class Component extends DCLogic {
+  state = {
+    screen: 'auth', stack: [], tab: 'home', authMode: 'login',
+    vehicles: SEED, selectedId: 'v1', seg: 'overview',
+    loading: false, form: {}, errors: {}, editing: null,
+    settings: { currency: 'EUR', lang: 'en', push: true, email: false },
+    plan: 'trial', planPick: 'pro', sheet: null, uploadError: null, toast: null,
+    docFilter: 'all', recordFilter: 'all', attachment: null, docId: null, deleted: [],
+  };
+
+  get DS() { return window.GarageBoxDesignSystem_0843eb || null; }
+  componentDidMount() {
+    if (!this.DS) this._t = setInterval(() => { if (this.DS) { clearInterval(this._t); this.forceUpdate(); } }, 100);
+  }
+  componentWillUnmount() { clearInterval(this._t); clearTimeout(this._toast); clearTimeout(this._load); }
+
+  days(iso) { return Math.round((new Date(iso + 'T00:00:00Z') - new Date(TODAY + 'T00:00:00Z')) / 86400000); }
+  fmtDate(iso) {
+    if (!iso) return '—';
+    const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const p = iso.split('-');
+    return p[2] + ' ' + m[Number(p[1]) - 1] + ' ' + p[0];
+  }
+  fmtKm(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  fmtMoney(n) {
+    const c = this.state.settings.currency;
+    const v = this.fmtKm(Math.round(Number(n) || 0));
+    if (c === 'BGN') return v + ' лв';
+    if (c === 'USD') return '$' + v;
+    return '€' + v;
+  }
+  statusOf(days) { return days < 0 ? 'overdue' : (days <= 30 ? 'due' : 'ok'); }
+  statusLabel(days) {
+    if (days < 0) return Math.abs(days) + (Math.abs(days) === 1 ? ' day overdue' : ' days overdue');
+    if (days === 0) return 'Expires today';
+    if (days <= 30) return days + (days === 1 ? ' day left' : ' days left');
+    return 'Valid';
+  }
+
+  docsOf(v) {
+    const out = [];
+    v.obligations.forEach(o => { if (o.doc && this.state.deleted.indexOf(o.doc) < 0) out.push({ id: o.doc, name: OB_META[o.type].label.toLowerCase().replace(/ /g, '-') + '-' + o.validUntil.slice(0, 4) + '.pdf', kind: 'pdf', icon: 'file-text', hue: OB_META[o.type].hue, tint: OB_META[o.type].tint, sizeBytes: 380000 + o.cost * 900, attach: OB_META[o.type].label, vehicle: v }); });
+    v.records.forEach(r => { if (r.doc && this.state.deleted.indexOf(r.doc) < 0) out.push({ id: r.doc, name: 'invoice-' + r.date + '.pdf', kind: 'pdf', icon: 'file-text', hue: 'var(--cat-service)', tint: 'var(--gb-blue-tint)', sizeBytes: 240000 + r.cost * 1200, attach: MT_META[r.type].label, vehicle: v }); });
+    return out;
+  }
+  fmtSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.round(b / 1024) + ' KB'; }
+
+  decorate() {
+    return this.state.vehicles.map(v => {
+      const renewals = v.obligations.map(o => {
+        const d = this.days(o.validUntil), st = this.statusOf(d), m = OB_META[o.type];
+        return { id: o.id, type: m.row, icon: m.icon, hue: m.hue, tint: m.tint, title: m.label, provider: o.provider || 'No provider on file', policyNumber: o.policyNumber, cost: o.cost, costFmt: this.fmtMoney(o.cost), validUntil: o.validUntil, validFrom: o.validFrom, dateFmt: this.fmtDate(o.validUntil), days: d, status: st, statusLabel: this.statusLabel(d), hasDocument: !!o.doc && this.state.deleted.indexOf(o.doc) < 0, raw: o };
+      }).sort((a, b) => a.days - b.days);
+      const services = v.records.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map(r => {
+        const m = MT_META[r.type];
+        return { id: r.id, type: r.type, icon: m.icon, title: m.label, date: r.date, dateFmt: this.fmtDate(r.date), cost: r.cost, costFmt: this.fmtMoney(r.cost), mileage: r.mileage, mileageFmt: this.fmtKm(r.mileage), hasDocument: !!r.doc && this.state.deleted.indexOf(r.doc) < 0, notes: r.notes, raw: r };
+      });
+      const overdue = renewals.filter(o => o.status === 'overdue').length;
+      const due = renewals.filter(o => o.status === 'due').length;
+      const status = overdue ? 'overdue' : (due ? 'due' : 'ok');
+      return Object.assign({}, v, {
+        name: v.make + ' ' + v.model, mileageFmt: this.fmtKm(v.mileage),
+        renewals, services, docs: this.docsOf(v),
+        overdueCount: overdue, dueCount: due, status,
+        statusLabel: overdue ? overdue + (overdue === 1 ? ' overdue' : ' overdue') : (due ? due + ' due soon' : 'All good'),
+      });
+    });
+  }
+
+  go(screen, params) {
+    const st = { screen, stack: this.state.stack.concat([{ screen: this.state.screen, seg: this.state.seg }]) };
+    if (params && params.vehicleId) st.selectedId = params.vehicleId;
+    if (params && params.seg) st.seg = params.seg;
+    st.errors = {};
+    this.setState(st);
+  }
+  back() {
+    const s = this.state.stack.slice();
+    const prev = s.pop() || { screen: 'home' };
+    this.setState({ stack: s, screen: prev.screen, seg: prev.seg || 'overview', errors: {}, sheet: null, uploadError: null });
+  }
+  toast(msg) {
+    clearTimeout(this._toast);
+    this.setState({ toast: msg });
+    this._toast = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+  setField(k, val) { this.setState(s => ({ form: Object.assign({}, s.form, { [k]: val }) })); }
+  loadHome() {
+    this.setState({ screen: 'home', tab: 'home', stack: [], loading: true });
+    clearTimeout(this._load);
+    this._load = setTimeout(() => this.setState({ loading: false }), 900);
+  }
+
+  renderVals() {
+    const S = this.state;
+    const DS = this.DS;
+    const vehicles = this.decorate();
+    const car = vehicles.find(v => v.id === S.selectedId) || vehicles[0] || null;
+    const nav = (screen, params) => {
+      if (screen === 'obligation') return this.openObligation(params);
+      if (screen === 'record') return this.openRecord(params);
+      if (screen === 'documents') { this.setState({ tab: 'docs', screen: 'documents', stack: [] }); if (params && params.upload) this.setState({ sheet: 'upload' }); return; }
+      this.go(screen, params);
+    };
+    const f = S.form, e = S.errors;
+    const fh = {};
+    ['email', 'password', 'password2', 'make', 'model', 'year', 'plate', 'vin', 'engine', 'purchaseMileage', 'currentMileage', 'date', 'mileage', 'cost', 'notes', 'type', 'validFrom', 'validUntil', 'provider', 'policyNumber', 'lead']
+      .forEach(k => { fh[k] = ev => this.setField(k, ev && ev.target ? ev.target.value : ev); });
+    fh.push = v => this.setField('push', v);
+    fh.emailNudge = v => this.setField('emailNudge', v);
+
+    const allDocs = [];
+    vehicles.forEach(v => this.docsOf(v).forEach(d => allDocs.push(Object.assign({}, d, { vehicle: v }))));
+    const docsUsed = allDocs.length;
+    const docLimit = 10;
+    const doc = allDocs.find(d => d.id === S.docId) || allDocs[0] || null;
+
+    const filteredDocs = allDocs.filter(d => S.docFilter === 'all' || (S.docFilter === 'services' ? d.hue === 'var(--cat-service)' : d.hue !== 'var(--cat-service)'));
+
+    const allServices = [];
+    vehicles.forEach(v => v.services.forEach(s => allServices.push(Object.assign({}, s, { vehicle: v }))));
+    allServices.sort((a, b) => (a.date < b.date ? 1 : -1));
+    const rFiltered = allServices.filter(s => S.recordFilter === 'all' || s.vehicle.id === S.recordFilter);
+    const groupsMap = {};
+    rFiltered.forEach(s => {
+      const key = s.dateFmt.slice(3);
+      (groupsMap[key] = groupsMap[key] || []).push(Object.assign({}, s, {
+        sub: s.vehicle.plate + ' · ' + s.dateFmt,
+        onClick: () => this.openRecord({ vehicleId: s.vehicle.id, id: s.id }),
+      }));
+    });
+    const recordGroups = Object.keys(groupsMap).map(k => ({ label: k, items: groupsMap[k] }));
+
+    const allRenewals = [];
+    vehicles.forEach(v => v.renewals.forEach(o => allRenewals.push(Object.assign({}, o, {
+      sub: v.make + ' ' + v.model + ' · ' + v.plate,
+      onClick: () => this.openObligation({ vehicleId: v.id, id: o.id }),
+    }))));
+    allRenewals.sort((a, b) => a.days - b.days);
+    const rg = [
+      { label: 'Overdue', items: allRenewals.filter(o => o.days < 0) },
+      { label: 'Next 30 days', items: allRenewals.filter(o => o.days >= 0 && o.days <= 30) },
+      { label: 'Later this year', items: allRenewals.filter(o => o.days > 30) },
+    ].filter(g => g.items.length);
+
+    const spent = car ? car.services.reduce((a, s) => a + s.cost, 0) + car.renewals.reduce((a, o) => a + o.cost, 0) : 0;
+    const tabScreens = { home: 'home', records: 'records', docs: 'documents', me: 'settings' };
+    const isTabScreen = ['home', 'records', 'documents', 'settings', 'empty'].indexOf(S.screen) >= 0;
+
+    return {
+      vehicles, demoId: 'v1', selectedId: S.selectedId, greeting: 'Hello, Ivan',
+      dashVariant: this.props.dashboardStyle || 'renewals',
+      loading: S.loading, plan: S.plan, docsUsed, docLimit,
+      tab: S.tab, tabItems: [
+        { value: 'home', label: 'Garage', icon: 'house' },
+        { value: 'records', label: 'Records', icon: 'wrench' },
+        { value: 'add', label: 'Add', icon: 'plus' },
+        { value: 'docs', label: 'Documents', icon: 'folder' },
+        { value: 'me', label: 'Profile', icon: 'user' },
+      ],
+      showTabBar: isTabScreen && S.screen !== 'home',
+      setTab: v => {
+        if (v === 'add') return this.setState({ sheet: 'add' });
+        this.setState({ tab: v, screen: tabScreens[v] === 'home' && vehicles.length === 0 ? 'empty' : tabScreens[v], stack: [] });
+      },
+
+      sAuth: S.screen === 'auth', sOnb: S.screen === 'onboarding',
+      sHome: S.screen === 'home' && vehicles.length > 0,
+      sEmpty: S.screen === 'empty' || (S.screen === 'home' && vehicles.length === 0),
+      sRecords: S.screen === 'records', sVehicle: S.screen === 'vehicle',
+      sAddVehicle: S.screen === 'addVehicle', sAddRecord: S.screen === 'addRecord',
+      sAddObligation: S.screen === 'addObligation', sDocs: S.screen === 'documents',
+      sDocViewer: S.screen === 'docViewer', sReminders: S.screen === 'reminders',
+      sSettings: S.screen === 'settings', sPaywall: S.screen === 'paywall',
+
+      authMode: S.authMode, isRegister: S.authMode === 'register',
+      authTabs: [{ value: 'login', label: 'Sign in' }, { value: 'register', label: 'Create account' }],
+      authCta: S.authMode === 'login' ? 'Sign in' : 'Create account',
+      passwordHint: S.authMode === 'register' ? 'At least 8 characters, one number.' : '',
+      setAuthMode: v => this.setState({ authMode: v, errors: {} }),
+      submitAuth: () => this.submitAuth(),
+
+      form: f, err: e, fh, half: { flex: 1, minWidth: 0 },
+      goAddVehicle: () => { this.setState({ form: {}, errors: {}, editing: null }); this.go('addVehicle'); },
+      goEditVehicle: () => {
+        this.setState({ editing: car.id, errors: {}, form: { make: car.make, model: car.model, year: String(car.year), plate: car.plate, vin: car.vin, engine: car.engine, purchaseMileage: String(car.purchaseMileage), currentMileage: String(car.mileage) } });
+        this.go('addVehicle');
+      },
+      goHome: () => this.loadHome(),
+      addCarAction: DS ? React.createElement(DS.Button, { icon: 'plus', onClick: () => { this.setState({ form: {}, editing: null }); this.go('addVehicle'); } }, 'Add a car') : null,
+      uploadAction: DS ? React.createElement(DS.Button, { icon: 'upload', onClick: () => this.setState({ sheet: 'upload', uploadError: null }) }, 'Upload a document') : null,
+      vehicleFormTitle: S.editing ? 'Edit car' : 'Add a car',
+      saveVehicle: () => this.saveVehicle(),
+
+      car: car ? Object.assign({}, car, {
+        spentFmt: this.fmtMoney(spent),
+        facts: [
+          { label: 'Year', value: String(car.year) },
+          { label: 'Engine', value: car.engine || '—' },
+          { label: 'VIN', value: car.vin || '—' },
+          { label: 'Plate', value: car.plate || '—' },
+          { label: 'At purchase', value: this.fmtKm(car.purchaseMileage) + ' km' },
+        ],
+        serviceRows: car.services.map(s => Object.assign({}, s, { onClick: () => this.openRecord({ vehicleId: car.id, id: s.id }) })),
+        renewalRows: car.renewals.map(o => Object.assign({}, o, { onClick: () => this.openObligation({ vehicleId: car.id, id: o.id }) })),
+        docRows: car.docs.map(d => Object.assign({}, d, { sub: d.attach, size: this.fmtSize(d.sizeBytes), onClick: () => { this.setState({ docId: d.id }); this.go('docViewer'); } })),
+      }) : { facts: [], serviceRows: [], renewalRows: [], docRows: [] },
+      vehicleActions: DS && car ? React.createElement(DS.IconButton, { icon: 'pencil', label: 'Edit car', onClick: () => {
+        this.setState({ editing: car.id, form: { make: car.make, model: car.model, year: String(car.year), plate: car.plate, vin: car.vin, engine: car.engine, purchaseMileage: String(car.purchaseMileage), currentMileage: String(car.mileage) } });
+        this.go('addVehicle');
+      } }) : null,
+      seg: S.seg, setSeg: v => this.setState({ seg: v }),
+      vehicleSegs: [{ value: 'overview', label: 'Overview' }, { value: 'services', label: 'Services' }, { value: 'renewals', label: 'Renewals' }, { value: 'docs', label: 'Docs' }],
+      segOverview: S.seg === 'overview', segServices: S.seg === 'services', segRenewals: S.seg === 'renewals', segDocs: S.seg === 'docs',
+      selectVehicle: id => this.setState({ selectedId: id }),
+      nav,
+      back: () => this.back(),
+
+      maintenanceOptions: Object.keys(MT_META).map(k => ({ value: k, label: MT_META[k].label })),
+      obligationOptions: Object.keys(OB_META).map(k => ({ value: k, label: OB_META[k].label })),
+      leadOptions: [{ value: '30', label: '30 days before' }, { value: '14', label: '14 days before' }, { value: '7', label: '7 days before' }],
+      recordFormTitle: S.editing && S.editing.indexOf('r') === 0 ? 'Service' : 'Log a service',
+      obligationFormTitle: S.editing && S.editing.indexOf('o') === 0 ? 'Renewal' : 'Add a renewal',
+      currencyCode: S.settings.currency,
+      mileageHint: car && f.mileage && Number(f.mileage) < car.mileage ? 'Below the last reading — we keep the higher one.' : '',
+      goAddRecord: () => { this.setState({ editing: null, errors: {}, attachment: null, form: { type: 'oil', date: TODAY, mileage: String(car ? car.mileage : ''), cost: '' } }); this.go('addRecord', { vehicleId: car && car.id }); },
+      goAddObligation: () => { this.setState({ editing: null, errors: {}, form: { type: 'insurance', validFrom: TODAY, validUntil: '2027-08-06', cost: '', push: true, emailNudge: false, lead: '30' } }); this.go('addObligation', { vehicleId: car && car.id }); },
+      saveRecord: () => this.saveRecord(),
+      saveObligation: () => this.saveObligation(),
+      attachment: S.attachment || { name: '', size: '', kind: 'pdf' },
+      hasAttachment: !!S.attachment, noAttachment: !S.attachment,
+      removeAttachment: () => this.setState({ attachment: null }),
+      openUpload: () => this.setState({ sheet: 'upload', uploadError: null }),
+
+      docFilter: S.docFilter, setDocFilter: v => this.setState({ docFilter: v }),
+      docFilters: [{ value: 'all', label: 'All' }, { value: 'services', label: 'Invoices' }, { value: 'renewals', label: 'Policies' }],
+      docRows: filteredDocs.map(d => Object.assign({}, d, {
+        sub: d.vehicle.plate + ' · ' + d.attach, size: this.fmtSize(d.sizeBytes),
+        onClick: () => { this.setState({ docId: d.id }); this.go('docViewer'); },
+      })),
+      noDocs: filteredDocs.length === 0,
+      docActions: DS ? React.createElement(DS.IconButton, { icon: 'upload', label: 'Upload', onClick: () => this.setState({ sheet: 'upload', uploadError: null }) }) : null,
+      showDocQuota: S.plan === 'free',
+      docQuotaPct: Math.min(100, Math.round((docsUsed / docLimit) * 100)),
+      docQuotaTone: docsUsed >= docLimit ? 'overdue' : (docsUsed / docLimit > 0.7 ? 'due' : 'accent'),
+      docQuotaLabel: docsUsed + ' / ' + docLimit + ' documents',
+      showPaywallQuota: S.plan === 'free',
+      showPaywallStatus: S.plan !== 'free',
+      paywallStatusLine: S.plan === 'pro' ? 'You\'re on Pro — unlimited cars and documents.' : 'Pro trial — 9 days left. ' + docsUsed + ' documents filed so far.',
+      doc: doc ? {
+        short: doc.name.length > 22 ? doc.name.slice(0, 20) + '…' : doc.name,
+        kindLabel: doc.kind === 'pdf' ? 'PDF' : 'Image',
+        facts: [
+          { label: 'File', value: doc.name },
+          { label: 'Size', value: this.fmtSize(doc.sizeBytes) },
+          { label: 'Car', value: doc.vehicle.plate },
+          { label: 'Filed against', value: doc.attach },
+        ],
+      } : { short: '', kindLabel: '', facts: [] },
+      deleteDoc: () => { this.setState(s => ({ deleted: s.deleted.concat([s.docId]) })); this.back(); this.toast('Deleted. Gone for good.'); },
+
+      recordFilter: S.recordFilter, setRecordFilter: v => this.setState({ recordFilter: v }),
+      recordFilters: [{ value: 'all', label: 'All cars' }].concat(vehicles.slice(0, 3).map(v => ({ value: v.id, label: v.model }))),
+      recordGroups,
+      reminderGroups: rg,
+
+      settings: S.settings,
+      setCurrency: ev => this.setState(s => ({ settings: Object.assign({}, s.settings, { currency: ev.target.value }) })),
+      setLang: ev => this.setState(s => ({ settings: Object.assign({}, s.settings, { lang: ev.target.value }) })),
+      togglePush: v => this.setState(s => ({ settings: Object.assign({}, s.settings, { push: v }) })),
+      toggleEmail: v => this.setState(s => ({ settings: Object.assign({}, s.settings, { email: v }) })),
+      currencyOptions: [{ value: 'EUR', label: 'Euro (€)' }, { value: 'BGN', label: 'Lev (лв)' }, { value: 'USD', label: 'US dollar ($)' }],
+      languageOptions: [{ value: 'en', label: 'English' }, { value: 'bg', label: 'Български' }],
+      planRowTitle: S.plan === 'pro' ? 'GarageBox Pro' : (S.plan === 'trial' ? 'Pro trial — 9 days left' : 'Free plan'),
+      planRowSub: S.plan === 'free' ? docsUsed + ' of ' + docLimit + ' documents used' : 'Unlimited cars and documents',
+      goPaywall: () => this.go('paywall'),
+      signOut: () => this.setState({ screen: 'auth', stack: [], form: {}, errors: {}, tab: 'home' }),
+
+      freeFeatures: ['One car', '10 documents', 'Renewal countdowns', 'Push reminders'],
+      proFeatures: ['Unlimited cars', 'Unlimited documents', 'Email + push reminders', 'Full service history export'],
+      planFreeSelected: S.planPick === 'free', planProSelected: S.planPick === 'pro',
+      pickFree: () => this.setState({ planPick: 'free' }), pickPro: () => this.setState({ planPick: 'pro' }),
+      planCtaLabel: S.planPick === 'pro' ? 'Go Pro — €5 a month' : 'Stay on Free',
+      confirmPlan: () => { this.setState({ plan: S.planPick === 'pro' ? 'pro' : 'free' }); this.back(); this.toast(S.planPick === 'pro' ? 'Pro it is. Room for the whole fleet.' : 'Staying free. Fair enough.'); },
+
+      sheetOpen: !!S.sheet,
+      sheetTitle: S.sheet === 'upload' ? 'Add a document' : 'What are you adding?',
+      closeSheet: () => this.setState({ sheet: null, uploadError: null }),
+      sheetItems: S.sheet === 'upload' ? [
+        { icon: 'camera', hue: 'var(--accent)', tint: 'var(--accent-tint)', title: 'Take a photo', sub: 'JPEG or PNG, up to 15 MB.', onClick: () => this.simulateUpload('photo') },
+        { icon: 'file-text', hue: 'var(--cat-service)', tint: 'var(--gb-blue-tint)', title: 'Choose a PDF', sub: 'From Files or iCloud Drive.', onClick: () => this.simulateUpload('pdf') },
+        { icon: 'scan-line', hue: 'var(--cat-inspection)', tint: 'var(--status-info-tint)', title: 'Scan a 22 MB spread', sub: 'Deliberately too big — see the error.', onClick: () => this.simulateUpload('big') },
+      ] : [
+        { icon: 'wrench', hue: 'var(--cat-service)', tint: 'var(--gb-blue-tint)', title: 'Log a service', sub: 'Oil, tires, brakes, a repair.', onClick: () => { this.setState({ sheet: null, editing: null, attachment: null, form: { type: 'oil', date: TODAY, mileage: String(car ? car.mileage : ''), cost: '' } }); this.go('addRecord', { vehicleId: car && car.id }); } },
+        { icon: 'shield-check', hue: 'var(--cat-insurance)', tint: 'var(--gb-green-tint)', title: 'Add a renewal', sub: 'Insurance, inspection, tax.', onClick: () => { this.setState({ sheet: null, editing: null, form: { type: 'insurance', validFrom: TODAY, validUntil: '2027-08-06', cost: '', push: true, emailNudge: false, lead: '30' } }); this.go('addObligation', { vehicleId: car && car.id }); } },
+        { icon: 'car-front', hue: 'var(--accent)', tint: 'var(--accent-tint)', title: 'Add a car', sub: 'Make, model, odometer.', onClick: () => { this.setState({ sheet: null, form: {}, editing: null }); this.go('addVehicle'); } },
+      ],
+      uploadError: !!S.uploadError,
+      uploadErrorTitle: S.uploadError ? S.uploadError.title : '',
+      uploadErrorBody: S.uploadError ? S.uploadError.body : '',
+
+      toast: S.toast,
+      notBuilt: () => this.toast('Not wired up yet — see the backend gaps.'),
+      gaps: GAPS.map((g, i) => Object.assign({}, g, {
+        n: i + 1,
+        hue: i < 3 ? 'var(--status-overdue)' : (i < 8 ? 'var(--status-due)' : 'var(--text-muted)'),
+        tint: i < 3 ? 'var(--status-overdue-tint)' : (i < 8 ? 'var(--status-due-tint)' : 'var(--surface-raised)'),
+      })),
+    };
+  }
+
+  submitAuth() {
+    const f = this.state.form, e = {};
+    if (!f.email || f.email.indexOf('@') < 0) e.email = 'That doesn\'t look like an email.';
+    if (!f.password || f.password.length < 8) e.password = 'At least 8 characters.';
+    if (this.state.authMode === 'register' && f.password2 !== f.password) e.password2 = 'The two don\'t match.';
+    if (Object.keys(e).length) return this.setState({ errors: e });
+    this.setState({ errors: {}, form: {} });
+    if (this.state.authMode === 'register') this.setState({ screen: 'onboarding', stack: [] });
+    else this.loadHome();
+  }
+
+  saveVehicle() {
+    const f = this.state.form, e = {};
+    const pm = Number(f.purchaseMileage || 0), cm = f.currentMileage === '' || f.currentMileage == null ? null : Number(f.currentMileage);
+    if (!f.make) e.make = 'Required.';
+    if (!f.model) e.model = 'Required.';
+    const y = Number(f.year);
+    if (!f.year || y < 1900 || y > 2100) e.year = 'Between 1900 and 2100.';
+    if (f.vin && f.vin.length > 17) e.vin = '17 characters at most.';
+    if (pm < 0 || pm > 2000000) e.purchaseMileage = 'That is not an odometer.';
+    if (cm != null && cm < pm) e.currentMileage = 'An odometer doesn\'t run backwards.';
+    if (Object.keys(e).length) return this.setState({ errors: e });
+    const editing = this.state.editing;
+    this.setState(s => {
+      const vs = s.vehicles.slice();
+      if (editing) {
+        const i = vs.findIndex(v => v.id === editing);
+        vs[i] = Object.assign({}, vs[i], { make: f.make, model: f.model, year: y, plate: f.plate, vin: f.vin, engine: f.engine, purchaseMileage: pm, mileage: cm == null ? pm : cm });
+      } else {
+        vs.push({ id: 'v' + (vs.length + 1) + Date.now(), make: f.make, model: f.model, year: y, plate: f.plate || '', vin: f.vin || '', engine: f.engine || '', purchaseMileage: pm, mileage: cm == null ? pm : cm, obligations: [], records: [] });
+      }
+      return { vehicles: vs, selectedId: editing || vs[vs.length - 1].id, form: {}, errors: {}, editing: null };
+    });
+    this.toast(editing ? 'Updated.' : 'Parked in the garage.');
+    this.back();
+  }
+
+  openRecord(p) {
+    const v = this.state.vehicles.find(x => x.id === p.vehicleId);
+    const r = v && v.records.find(x => x.id === p.id);
+    if (!r) return;
+    this.setState({ selectedId: v.id, editing: r.id, attachment: null, form: { type: r.type, date: r.date, mileage: String(r.mileage), cost: String(r.cost), notes: r.notes || '' } });
+    this.go('addRecord');
+  }
+
+  saveRecord() {
+    const f = this.state.form, e = {};
+    if (!f.date) e.date = 'Required.';
+    else if (this.days(f.date) > 0) e.date = 'A service can\'t be in the future.';
+    if (f.mileage === '' || f.mileage == null) e.mileage = 'Required.';
+    else if (Number(f.mileage) < 0 || Number(f.mileage) > 2000000) e.mileage = 'That is not an odometer.';
+    if (f.cost === '' || f.cost == null) e.cost = 'Required — 0 is fine.';
+    else if (Number(f.cost) < 0 || Number(f.cost) > 1000000) e.cost = 'Between 0 and 1 000 000.';
+    if (Object.keys(e).length) return this.setState({ errors: e });
+    const editing = this.state.editing, att = this.state.attachment;
+    this.setState(s => {
+      const vs = s.vehicles.map(v => {
+        if (v.id !== s.selectedId) return v;
+        const records = v.records.slice();
+        if (editing) {
+          const i = records.findIndex(r => r.id === editing);
+          records[i] = Object.assign({}, records[i], { type: f.type, date: f.date, mileage: Number(f.mileage), cost: Number(f.cost), notes: f.notes });
+        } else {
+          records.unshift({ id: 'r' + Date.now(), type: f.type || 'other', date: f.date, mileage: Number(f.mileage), cost: Number(f.cost), notes: f.notes || '', doc: att ? 'd' + Date.now() : null });
+        }
+        return Object.assign({}, v, { records, mileage: Math.max(v.mileage, Number(f.mileage)) });
+      });
+      return { vehicles: vs, form: {}, errors: {}, editing: null, attachment: null };
+    });
+    this.toast(editing ? 'Updated.' : 'Filed. One less thing in the glovebox.');
+    this.back();
+  }
+
+  openObligation(p) {
+    const v = this.state.vehicles.find(x => x.id === p.vehicleId);
+    const o = v && v.obligations.find(x => x.id === p.id);
+    if (!o) return;
+    this.setState({ selectedId: v.id, editing: o.id, form: { type: o.type, validFrom: o.validFrom, validUntil: o.validUntil, cost: String(o.cost), provider: o.provider || '', policyNumber: o.policyNumber || '', push: true, emailNudge: false, lead: '30' } });
+    this.go('addObligation');
+  }
+
+  saveObligation() {
+    const f = this.state.form, e = {};
+    if (!f.validUntil) e.validUntil = 'Required — this is the date we count down to.';
+    if (f.validFrom && f.validUntil && f.validFrom > f.validUntil) e.validFrom = 'Starts after it ends.';
+    if (f.cost === '' || f.cost == null) e.cost = 'Required — 0 is fine.';
+    else if (Number(f.cost) < 0 || Number(f.cost) > 1000000) e.cost = 'Between 0 and 1 000 000.';
+    if (Object.keys(e).length) return this.setState({ errors: e });
+    const editing = this.state.editing;
+    this.setState(s => {
+      const vs = s.vehicles.map(v => {
+        if (v.id !== s.selectedId) return v;
+        const obligations = v.obligations.slice();
+        if (editing) {
+          const i = obligations.findIndex(o => o.id === editing);
+          obligations[i] = Object.assign({}, obligations[i], { type: f.type, validFrom: f.validFrom, validUntil: f.validUntil, cost: Number(f.cost), provider: f.provider, policyNumber: f.policyNumber });
+        } else {
+          obligations.push({ id: 'o' + Date.now(), type: f.type || 'other', validFrom: f.validFrom, validUntil: f.validUntil, cost: Number(f.cost), provider: f.provider || '', policyNumber: f.policyNumber || '', doc: null });
+        }
+        return Object.assign({}, v, { obligations });
+      });
+      return { vehicles: vs, form: {}, errors: {}, editing: null };
+    });
+    this.toast(editing ? 'Updated. We\'ll count down from here.' : 'Saved. We\'ll nudge you in time.');
+    this.back();
+  }
+
+  simulateUpload(kind) {
+    if (kind === 'big') {
+      return this.setState({ uploadError: { title: 'That file is 22.4 MB', body: 'The limit is 15 MB. Try a photo instead of a scan, or split the PDF.' } });
+    }
+    const att = kind === 'photo'
+      ? { name: 'IMG_4471.jpg', size: '3.2 MB', kind: 'image' }
+      : { name: 'policy-2026.pdf', size: '1.2 MB', kind: 'pdf' };
+    this.setState({ attachment: att, sheet: null, uploadError: null });
+    this.toast('Filed. One less thing in the glovebox.');
+  }
+}
+</script>
+</body>
+</html>

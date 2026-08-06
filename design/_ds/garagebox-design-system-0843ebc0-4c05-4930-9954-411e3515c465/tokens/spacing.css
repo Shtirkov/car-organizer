@@ -1,0 +1,24 @@
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --gutter-screen: 20px;   /* left/right padding of every app screen */
+  --gap-card: 12px;        /* between stacked cards */
+  --gap-section: 28px;     /* between screen sections */
+  --tap-min: 44px;         /* minimum hit target */
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+}

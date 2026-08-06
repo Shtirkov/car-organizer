@@ -1,0 +1,82 @@
+/* GarageBox — color system. Dark-first: the app is only ever dark. */
+:root {
+  /* Base neutrals — cool, near-black, low chroma */
+  --gb-black: #08090b;
+  --gb-ink-900: #0d0f13;
+  --gb-ink-800: #14161b;
+  --gb-ink-700: #1a1d23;
+  --gb-ink-600: #23272f;
+  --gb-ink-500: #2d323c;
+  --gb-ink-400: #3b414d;
+  --gb-ink-300: #5a6272;
+  --gb-ink-200: #8b93a3;
+  --gb-ink-100: #b6bdc9;
+  --gb-white: #f4f6fa;
+
+  /* Brand amber — the action color (Direction B) */
+  --gb-amber-600: #e09330;
+  --gb-amber-400: #ffc880;
+  --gb-amber-300: #ffd9a3;
+  --gb-amber-tint-strong: rgba(255, 180, 84, 0.26);
+
+  /* Blue — kept as the "service" category hue and for informational surfaces */
+  --gb-blue-600: #3a6ae0;
+  --gb-blue-500: #5b8cff;
+  --gb-blue-400: #7ba4ff;
+  --gb-blue-300: #a6c1ff;
+  --gb-blue-tint: rgba(91, 140, 255, 0.14);
+  --gb-blue-tint-strong: rgba(91, 140, 255, 0.26);
+
+  /* Status hues */
+  --gb-green-500: #3ddc97;
+  --gb-green-tint: rgba(61, 220, 151, 0.14);
+  --gb-amber-500: #ffb454;
+  --gb-amber-tint: rgba(255, 180, 84, 0.14);
+  --gb-orange-500: #ff8a3d;
+  --gb-orange-tint: rgba(255, 138, 61, 0.14);
+  --gb-red-500: #ff5f5f;
+  --gb-red-tint: rgba(255, 95, 95, 0.14);
+  --gb-violet-500: #a78bfa;
+  --gb-violet-tint: rgba(167, 139, 250, 0.14);
+
+  /* ——— Semantic aliases: use these in components ——— */
+  --surface-app: var(--gb-ink-900);
+  --surface-card: var(--gb-ink-800);
+  --surface-raised: var(--gb-ink-700);
+  --surface-input: var(--gb-ink-700);
+  --surface-hover: var(--gb-ink-600);
+  --surface-sunken: var(--gb-black);
+  --surface-scrim: rgba(8, 9, 11, 0.72);
+
+  --text-strong: var(--gb-white);
+  --text-body: var(--gb-ink-100);
+  --text-muted: var(--gb-ink-200);
+  --text-faint: var(--gb-ink-300);
+  --text-on-accent: #221b10;
+
+  --border-subtle: var(--gb-ink-600);
+  --border-strong: var(--gb-ink-500);
+  --border-focus: var(--gb-blue-500);
+
+  --accent: var(--gb-amber-500);
+  --accent-hover: var(--gb-amber-400);
+  --accent-press: var(--gb-amber-600);
+  --accent-tint: var(--gb-amber-tint);
+  --accent-text: var(--gb-amber-400);
+
+  --status-ok: var(--gb-green-500);
+  --status-ok-tint: var(--gb-green-tint);
+  --status-due: var(--gb-orange-500);
+  --status-due-tint: var(--gb-orange-tint);
+  --status-overdue: var(--gb-red-500);
+  --status-overdue-tint: var(--gb-red-tint);
+  --status-info: var(--gb-violet-500);
+  --status-info-tint: var(--gb-violet-tint);
+
+  /* Category hues — maintenance + obligations get a stable color each */
+  --cat-service: var(--gb-blue-500);
+  --cat-insurance: var(--gb-green-500);
+  --cat-inspection: var(--gb-violet-500);
+  --cat-tax: var(--gb-orange-500);
+  --cat-document: var(--gb-ink-100);
+}
