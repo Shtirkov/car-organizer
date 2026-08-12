@@ -1,0 +1,11 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "Key": "REPLACE-ME-WITH-A-RANDOM-STRING-OF-AT-LEAST-32-BYTES"
+  }
+}
