@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 namespace CarOrganizer.Infrastructure.Persistence;
 
 /// <summary>EF Core-backed <see cref="IReminderStore"/>.</summary>
-
 public class ReminderStore : IReminderStore
 {
     private readonly AppDbContext _dbContext;
@@ -21,17 +20,22 @@ public class ReminderStore : IReminderStore
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<Reminder?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Reminder?> FindByIdAsync(Guid id, Guid vehicleId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Reminders
-            .Include(r => r.Vehicle)
-            .SingleOrDefaultAsync(r => r.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
     }
 
-    public async Task<IEnumerable<Reminder>> ListByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Reminder>> ListByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
+        // Open reminders first, then soonest due. DueDate is null for mileage-only reminders, so the
+        // explicit null key keeps them last on every provider rather than relying on Postgres/InMemory defaults.
         return await _dbContext.Reminders
-            .Where(r => r.VehicleId == vehicleId)
+            .Where(r => r.VehicleId == vehicleId)           
+            .OrderBy(r => r.IsCompleted)
+            .ThenBy(r => r.DueDate == null)
+            .ThenBy(r => r.DueDate)
+            .ThenBy(r => r.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
 

@@ -1,4 +1,3 @@
-
 using CarOrganizer.Domain.Entities;
 
 namespace CarOrganizer.Application.Interfaces;
@@ -12,7 +11,7 @@ public interface IReminderStore
     
     Task RemoveAsync(Reminder reminder, CancellationToken cancellationToken = default);
 
-    Task<Reminder?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Reminder?> FindByIdAsync(Guid id, Guid vehicleId, CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<Reminder>> ListByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Reminder>> ListByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
 }

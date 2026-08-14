@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddScoped<IDocumentStore, DocumentStore>();
         services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IReminderStore, ReminderStore>();
 
         services.AddJwtAuthentication(configuration);
 
