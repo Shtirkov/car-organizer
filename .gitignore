@@ -7,10 +7,6 @@ Car_Maintenance_Tracker_PRD_v1.docx
 *.docx
 ~$*.docx
 
-# ---- Local working notes (not committed) ----
-# CLAUDE.md is committed (shared project knowledge); personal/machine-specific notes go here:
-CLAUDE.local.md
-
 # ---- .NET / build output ----
 bin/
 obj/
@@ -82,12 +78,6 @@ logs/
 
 # ---- Uploaded documents (LocalFileStorage root; replaced by R2 in Phase 8) ----
 App_Data/
-
-# ---- Agent skills ----
-# The installed skill tree is vendored third-party content — treat it like node_modules
-# and reinstall with `npx skills add mattpocock/skills`. skills-lock.json is the lockfile
-# that pins each skill's source and hash, so it IS committed.
-.claude/skills/
 
 # ---- Backend gap catalogue (superseded by GitHub issues, 12 Aug 2026) ----
 # Every FEATURE.md and story became an issue (#1-#48), so the files would be a second
