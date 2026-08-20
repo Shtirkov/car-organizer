@@ -88,6 +88,8 @@ App_Data/
 # and reinstall with `npx skills add mattpocock/skills`. skills-lock.json is the lockfile
 # that pins each skill's source and hash, so it IS committed.
 .claude/skills/
+# The CLI's canonical store; .claude/skills/ holds per-agent copies of it.
+.agents/
 
 # ---- Backend gap catalogue (superseded by GitHub issues, 12 Aug 2026) ----
 # Every FEATURE.md and story became an issue (#1-#48), so the files would be a second
